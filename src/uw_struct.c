@@ -141,7 +141,7 @@ void _uw_struct_fini(UwValuePtr self)
 {
     // no op
 
-    // Status, File, and Compound types are aware it's no op and don't call it.
+    // Status, File, Connection, and Compound are aware it's no op and don't call it.
     // Make sure they'll do if any code will be added here ever.
 }
 
