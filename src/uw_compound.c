@@ -389,6 +389,8 @@ static void compound_fini(UwValuePtr self)
         cdata->parents[0] = nullptr;
         cdata->parents[1] = nullptr;
     }
+
+    // do not call Struct.fini because it's a no op
 }
 
 UwType _uw_compound_type = {
