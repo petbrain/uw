@@ -44,7 +44,7 @@ static void list_fini(UwValuePtr self)
     _uw_types[UwTypeId_Compound]->fini(self);
 
     // if we did not knew, then:
-    // UwValue status = uw_ancestor_of(UwTypeId_List)->fini(self);
+    // uw_ancestor_of(UwTypeId_List)->fini(self);
 }
 
 static void list_hash(UwValuePtr self, UwHashContext* ctx)
