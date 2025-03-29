@@ -14,6 +14,17 @@ static void panic_status()
     uw_panic("List cannot contain Status values");
 }
 
+static void list_fini(UwValuePtr self)
+{
+    _uw_destroy_list(self->type_id, get_data_ptr(self), self);
+
+    // call super method, we know the ancestor is Compound
+    _uw_types[UwTypeId_Compound]->fini(self);
+
+    // if we did not knew, then:
+    // uw_ancestor_of(UwTypeId_List)->fini(self);
+}
+
 static UwResult list_init(UwValuePtr self, void* ctor_args)
 {
     // XXX not using ctor_args for now
@@ -33,18 +44,8 @@ static UwResult list_init(UwValuePtr self, void* ctor_args)
     if (_uw_alloc_list(self->type_id, get_data_ptr(self), UWLIST_INITIAL_CAPACITY)) {
         return UwOK();
     }
+    list_fini(self);
     return UwOOM();
-}
-
-static void list_fini(UwValuePtr self)
-{
-    _uw_destroy_list(self->type_id, get_data_ptr(self), self);
-
-    // call super method, we know the ancestor is Compound
-    _uw_types[UwTypeId_Compound]->fini(self);
-
-    // if we did not knew, then:
-    // uw_ancestor_of(UwTypeId_List)->fini(self);
 }
 
 static void list_hash(UwValuePtr self, UwHashContext* ctx)

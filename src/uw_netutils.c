@@ -88,6 +88,11 @@ UwResult uw_parse_ipv4_subnet(UwValuePtr subnet, UwValuePtr netmask)
 
 UwTypeId UwTypeId_Connection = 0;
 
+static void connection_fini(UwValuePtr self)
+{
+    // do not call Struct.fini because it's a no op
+}
+
 static UwResult connection_init(UwValuePtr self, void* ctor_args)
 {
     // call super method, we know the ancestor is Compound
@@ -108,11 +113,6 @@ static UwResult connection_init(UwValuePtr self, void* ctor_args)
     // no need to call super method
 
     return UwOK();
-}
-
-static void connection_fini(UwValuePtr self)
-{
-    // do not call Struct.fini because it's a no op
 }
 
 static void connection_hash(UwValuePtr self, UwHashContext* ctx)

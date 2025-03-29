@@ -327,6 +327,22 @@ panic:
  * Basic interface methods
  */
 
+static void map_fini(UwValuePtr self)
+{
+    _UwMap* map = get_data_ptr(self);
+
+    _uw_destroy_list(self->type_id, &map->kv_pairs, self);
+
+    struct _UwHashTable* ht = &map->hash_table;
+    free_hash_table(self->type_id, ht);
+
+    // call super method, we know the ancestor is Compound
+    _uw_types[UwTypeId_Compound]->fini(self);
+
+    // if we did not knew, then:
+    // uw_ancestor_of(UwTypeId_Map)self);
+}
+
 static UwResult map_init(UwValuePtr self, void* ctor_args)
 {
     // XXX not using ctor_args for now
@@ -350,27 +366,11 @@ static UwResult map_init(UwValuePtr self, void* ctor_args)
     ht->items_used = 0;
     if (init_hash_table(self->type_id, ht, 0, UWMAP_INITIAL_CAPACITY)) {
         if (_uw_alloc_list(self->type_id, &map->kv_pairs, UWMAP_INITIAL_CAPACITY * 2)) {
-            return UwOK();;
+            return UwOK();
         }
-        free_hash_table(self->type_id, ht);
     }
+    map_fini(self);
     return uw_move(&error);;
-}
-
-static void map_fini(UwValuePtr self)
-{
-    _UwMap* map = get_data_ptr(self);
-
-    _uw_destroy_list(self->type_id, &map->kv_pairs, self);
-
-    struct _UwHashTable* ht = &map->hash_table;
-    free_hash_table(self->type_id, ht);
-
-    // call super method, we know the ancestor is Compound
-    _uw_types[UwTypeId_Compound]->fini(self);
-
-    // if we did not knew, then:
-    // uw_ancestor_of(UwTypeId_Map)self);
 }
 
 static void map_hash(UwValuePtr self, UwHashContext* ctx)
