@@ -628,7 +628,7 @@ void test_string()
         UwValue list = uw_string_split_chr(&str, '/', 0);
         //uw_dump(stderr, &list);
         UwValue list2 = uw_string_rsplit_chr(&str, '/', 1);
-        uw_dump(stderr, &list2);
+        //uw_dump(stderr, &list2);
         UwValue first = uw_list_item(&list2, 0);
         UwValue last = uw_list_item(&list2, 1);
         TEST(uw_equal(&first, U"สบาย/สบาย/yo"));
