@@ -382,6 +382,7 @@ static inline bool _uw_endswith_u8_wrapper(UwValuePtr str, char* suffix)
 
 UwResult uw_string_split(UwValuePtr str, unsigned maxsplit);  // split by spaces
 UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxsplit);
+UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxsplit);
 
 #define uw_string_split_any(str, splitters, maxsplit) _Generic((splitters),  \
                  char*: _uw_string_split_any_u8_wrapper, \

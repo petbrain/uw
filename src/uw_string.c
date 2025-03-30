@@ -2056,6 +2056,77 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
     return uw_move(&result);
 }
 
+UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxsplit)
+{
+    uw_assert_string(str);
+    StrMethods* strmeth = get_str_methods(str);
+
+    unsigned len = _uw_string_length(str);
+    uint8_t char_size = _uw_string_char_size(str);
+
+    UwValue result = UwList();
+    if (uw_error(&result) || len == 0) {
+        return uw_move(&result);
+    }
+
+    unsigned i = len - 1;
+    unsigned end_i = i;
+    char8_t* start = _uw_string_char_ptr(str, i);
+    uint8_t substr_width = 0;
+
+    while (i) {
+        char32_t c = strmeth->get_char(start);
+        if (c == splitter) {
+            // create substring
+            unsigned substr_len = end_i - i;
+            UwValue substr = uw_create_empty_string(substr_len, char_width_to_char_size(substr_width));
+            if (uw_error(&substr)) {
+                return uw_move(&substr);
+            }
+            if (substr_len) {
+                strmeth->copy_to(start + char_size, &substr, 0, substr_len);
+                _uw_string_set_length(&substr, substr_len);
+            }
+            if (!uw_list_insert(&result, 0, &substr)) {
+                return UwOOM();
+            }
+
+            end_i = i;
+            substr_width = 0;
+
+            if (maxsplit) {
+                if (0 == --maxsplit) {
+                    do {
+                        start -= char_size;
+                        c = strmeth->get_char(start);
+                        substr_width = update_char_width(substr_width, c);
+                    } while (--i);
+                    break;
+                }
+            }
+        }
+        i--;
+        start -= char_size;
+        substr_width = update_char_width(substr_width, c);
+    }
+    // create final substring
+    {
+        unsigned substr_len = end_i;
+        UwValue substr = uw_create_empty_string(substr_len, char_width_to_char_size(substr_width));
+        if (uw_error(&substr)) {
+            return uw_move(&substr);
+        }
+        if (substr_len) {
+            strmeth->copy_to(start, &substr, 0, substr_len);
+            _uw_string_set_length(&substr, substr_len);
+        }
+        if (!uw_list_insert(&result, 0, &substr)) {
+            return UwOOM();
+        }
+    }
+    return uw_move(&result);
+}
+
 UwResult _uw_strcat_va_v(...)
 {
     va_list ap;
