@@ -1935,7 +1935,7 @@ bool uw_string_upper(UwValuePtr str)
     return true;
 }
 
-UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter)
+UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxsplit)
 {
     uw_assert_string(str);
     StrMethods* strmeth = get_str_methods(str);
@@ -1974,6 +1974,13 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter)
             start_i = i + 1;
             start = ptr + char_size;
             substr_width = 0;
+
+            if (maxsplit) {
+                if (0 == --maxsplit) {
+                    i = len;
+                    break;
+                }
+            }
         }
         i++;
         ptr += char_size;

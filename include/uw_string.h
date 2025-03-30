@@ -332,45 +332,46 @@ static inline bool _uw_substring_eq_u8_wrapper(UwValuePtr a, unsigned start_pos,
 /****************************************************************
  * Split functions.
  * Return list of strings.
+ * maxsplit == 0 imposes no limit
  */
 
-UwResult uw_string_split(UwValuePtr str);  // split by spaces
-UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter);
+UwResult uw_string_split(UwValuePtr str, unsigned maxsplit);  // split by spaces
+UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxsplit);
 
-#define uw_string_split_any(str, splitters) _Generic((splitters),  \
+#define uw_string_split_any(str, splitters, maxsplit) _Generic((splitters),  \
                  char*: _uw_string_split_any_u8_wrapper, \
               char8_t*: _uw_string_split_any_u8,         \
              char32_t*: _uw_string_split_any_u32,        \
             UwValuePtr: _uw_string_split_any             \
-    )((str), (splitters))
+    )((str), (splitters), (maxsplit))
 
-UwResult  uw_string_split_any_cstr(UwValuePtr str, char*      splitters);
-UwResult _uw_string_split_any_u8  (UwValuePtr str, char8_t*   splitters);
-UwResult _uw_string_split_any_u32 (UwValuePtr str, char32_t*  splitters);
-UwResult _uw_string_split_any     (UwValuePtr str, UwValuePtr splitters);
+UwResult  uw_string_split_any_cstr(UwValuePtr str, char*      splitters, unsigned maxsplit);
+UwResult _uw_string_split_any_u8  (UwValuePtr str, char8_t*   splitters, unsigned maxsplit);
+UwResult _uw_string_split_any_u32 (UwValuePtr str, char32_t*  splitters, unsigned maxsplit);
+UwResult _uw_string_split_any     (UwValuePtr str, UwValuePtr splitters, unsigned maxsplit);
 
-static inline UwResult _uw_string_split_any_u8_wrapper(UwValuePtr str, char* splitters)
+static inline UwResult _uw_string_split_any_u8_wrapper(UwValuePtr str, char* splitters, unsigned maxsplit)
 {
-    return _uw_string_split_any_u8(str, (char8_t*) splitters);
+    return _uw_string_split_any_u8(str, (char8_t*) splitters, maxsplit);
 }
 
-#define uw_string_split_strict(str, splitter) _Generic((splitter),  \
+#define uw_string_split_strict(str, splitter, maxsplit) _Generic((splitter),  \
               char32_t: _uw_string_split_c32,               \
                    int: _uw_string_split_c32,               \
                  char*: _uw_string_split_strict_u8_wrapper, \
               char8_t*: _uw_string_split_strict_u8,         \
              char32_t*: _uw_string_split_strict_u32,        \
             UwValuePtr: _uw_string_split_strict             \
-    )((str), (splitter))
+    )((str), (splitter), (maxsplit))
 
-UwResult  uw_string_split_strict_cstr(UwValuePtr str, char*      splitter);
-UwResult _uw_string_split_strict_u8  (UwValuePtr str, char8_t*   splitter);
-UwResult _uw_string_split_strict_u32 (UwValuePtr str, char32_t*  splitter);
-UwResult _uw_string_split_strict     (UwValuePtr str, UwValuePtr splitter);
+UwResult  uw_string_split_strict_cstr(UwValuePtr str, char*      splitter, unsigned maxsplit);
+UwResult _uw_string_split_strict_u8  (UwValuePtr str, char8_t*   splitter, unsigned maxsplit);
+UwResult _uw_string_split_strict_u32 (UwValuePtr str, char32_t*  splitter, unsigned maxsplit);
+UwResult _uw_string_split_strict     (UwValuePtr str, UwValuePtr splitter, unsigned maxsplit);
 
-static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* splitter)
+static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* splitter, unsigned maxsplit)
 {
-    return _uw_string_split_strict_u8(str, (char8_t*) splitter);
+    return _uw_string_split_strict_u8(str, (char8_t*) splitter, maxsplit);
 }
 
 /****************************************************************

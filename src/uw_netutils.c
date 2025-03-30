@@ -34,7 +34,7 @@ UwResult uw_parse_ipv4_subnet(UwValuePtr subnet, UwValuePtr netmask)
     }
 
     // check CIDR notation
-    UwValue parts = uw_string_split_chr(subnet, '/');
+    UwValue parts = uw_string_split_chr(subnet, '/', 0);
     if (uw_error(&parts)) {
         return uw_move(&parts);
     }
