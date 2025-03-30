@@ -15,6 +15,7 @@ endif()
 find_package(ICU COMPONENTS uc)
 
 add_library(uw STATIC
+    src/uw_args.c
     src/uw_base.c
     src/uw_charptr.c
     src/uw_compound.c

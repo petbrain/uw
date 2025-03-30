@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "include/uw.h"
+#include "include/uw_args.h"
 #include "include/uw_netutils.h"
 #include "src/uw_string_internal.h"
 
@@ -614,7 +615,7 @@ void test_string()
 
     { // test split/join
         UwValue str = uw_create_string(U"สบาย/สบาย/yo/yo");
-        UwValue list = uw_string_split_chr(&str, '/');
+        UwValue list = uw_string_split_chr(&str, '/', 0);
         //uw_dump(stderr, &list);
         UwValue v = uw_list_join('/', &list);
         TEST(uw_equal(&v, U"สบาย/สบาย/yo/yo"));
@@ -916,6 +917,48 @@ void test_netutils()
     }
 }
 
+void test_args()
+{
+    {
+        char* argv[] = {
+            "/bin/sh",
+            "foo=bar",
+            "one=1",
+            "two",
+            "three",
+            "four=4"
+        };
+        UwValue args = uw_parse_kvargs(
+            UW_LENGTH_OF(argv),
+            argv
+        );
+        TEST(uw_is_map(&args));
+        for(unsigned i = 0; i < UW_LENGTH_OF(argv); i++) {{
+            UwValue k = UwNull();
+            UwValue v = UwNull();
+            TEST(uw_map_item(&args, i, &k, &v));
+            if (i == 0) {
+                TEST(uw_equal(&k, 0));
+                TEST(uw_equal(&v, argv[i]));
+            } else {
+                char* separator = strchr(argv[i], '=');
+                if (separator) {
+                    unsigned n = separator - argv[i];
+                    char key[n + 1];
+                    strncpy(key, argv[i], n);
+                    key[n] = 0;
+                    TEST(uw_equal(&k, key));
+                    TEST(uw_equal(&v, separator + 1));
+                } else {
+                    TEST(uw_equal(&k, argv[i]));
+                    TEST(uw_is_null(&v));
+                }
+            }
+        }}
+        //uw_dump(stderr, &args);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     //debug_allocator.verbose = true;
@@ -938,6 +981,7 @@ int main(int argc, char* argv[])
     test_file();
     test_string_io();
     test_netutils();
+    test_args();
 
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     print_timediff(stderr, "time elapsed:", &start_time, &end_time);
