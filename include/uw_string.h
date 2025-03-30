@@ -405,7 +405,7 @@ static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* 
     /* make String rvalue, character size 1 byte, up to 12 chars */  \
     ({  \
         __UWDECL_String_1_12(v, (len), (c0), (c1), (c2), (c3), (c4), (c5), (c6), (c7), (c8), (c9), (c10), (c11));  \
-        static_assert((len) <= _UWC_LENGTH_OF(v.str_1));  \
+        static_assert((len) <= UW_LENGTH_OF(v.str_1));  \
         v;  \
     })
 
@@ -431,7 +431,7 @@ static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* 
     /* make String rvalue, character size 2 bytes, up to 6 chars */  \
     ({  \
         __UWDECL_String_2_6(v, (len), (c0), (c1), (c2), (c3), (c4), (c5));  \
-        static_assert((len) <= _UWC_LENGTH_OF(v.str_2));  \
+        static_assert((len) <= UW_LENGTH_OF(v.str_2));  \
         v;  \
     })
 
@@ -455,7 +455,7 @@ static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* 
     /* make String rvalue, character size 3 bytes, up to 4 chars */  \
     ({  \
         __UWDECL_String_3_4(v, (len), (c0), (c1), (c2), (c3));  \
-        static_assert((len) <= _UWC_LENGTH_OF(v.str_3));  \
+        static_assert((len) <= UW_LENGTH_OF(v.str_3));  \
         v;  \
     })
 
@@ -478,7 +478,7 @@ static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* 
     /* make String rvalue, character size 4 bytes, up to 3 chars */  \
     ({  \
         __UWDECL_String_4_3(v, (len), (c0), (c1), (c2));  \
-        static_assert((len) <= _UWC_LENGTH_OF(v.str_4));  \
+        static_assert((len) <= UW_LENGTH_OF(v.str_4));  \
         v;  \
     })
 

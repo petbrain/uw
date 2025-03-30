@@ -694,7 +694,7 @@ static void init_type_system()
         return;
     }
 
-    num_uw_types = _UWC_LENGTH_OF(basic_types);
+    num_uw_types = UW_LENGTH_OF(basic_types);
     _uw_types = mmarray_allocate(num_uw_types, sizeof(UwType*));
 
     for(UwTypeId i = 0; i < num_uw_types; i++) {
