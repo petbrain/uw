@@ -571,12 +571,12 @@ bool uw_map_update(UwValuePtr map, UwValuePtr key, UwValuePtr value)
     UwValue map_key = UwNull();
     map_key = uw_deepcopy(key);  // deep copy key for immutability
     if (uw_error(&map_key)) {
-        uw_destroy(&map_key);  // make error checker happy
+        uw_destroy(&map_key);
         return false;
     }
     UwValue map_value = uw_clone(value);
     if (uw_error(&map_value)) {
-        uw_destroy(&map_value);  // make error checker happy
+        uw_destroy(&map_value);
         return false;
     }
     return update_map(map, &map_key, &map_value);
