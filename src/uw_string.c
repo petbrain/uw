@@ -2065,16 +2065,6 @@ UwResult _uw_strcat_va(...)
     return uw_move(&result);
 }
 
-static void consume_args(va_list ap)
-{
-    for (;;) {{
-        UwValue arg = va_arg(ap, _UwValue);
-        if (uw_va_end(&arg)) {
-            break;
-        }
-    }}
-}
-
 UwResult uw_strcat_ap(va_list ap)
 {
     // default error is OOM unless some arg is a status
@@ -2098,7 +2088,7 @@ UwResult uw_strcat_ap(va_list ap)
             uw_destroy(&error);
             error = uw_clone(&arg);
             va_end(temp_ap);
-            consume_args(ap);
+            _uw_destroy_args(ap);
             return uw_move(&error);
         }
         if (uw_is_string(&arg)) {
@@ -2115,7 +2105,7 @@ UwResult uw_strcat_ap(va_list ap)
             _uw_set_status_desc(&error, "Bad argument %u type for uw_strcat: %u, %s",
                                 arg_no, arg.type_id, uw_get_type_name(arg.type_id));
             va_end(temp_ap);
-            consume_args(ap);
+            _uw_destroy_args(ap);
             return uw_move(&error);
         }
     }
@@ -2175,7 +2165,7 @@ UwResult uw_strcat_ap(va_list ap)
             charptr_index++;
         }
     }}
-    consume_args(ap);
+    _uw_destroy_args(ap);
     return uw_move(&error);
 }
 
