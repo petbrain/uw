@@ -41,7 +41,7 @@ static void init_statuses()
     if (statuses) {
         return;
     }
-    num_statuses = UW_LENGTH_OF(basic_statuses);
+    num_statuses = UW_LENGTH(basic_statuses);
     statuses = mmarray_allocate(num_statuses, sizeof(char*));
     for(uint16_t i = 0; i < num_statuses; i++) {
         char* status = basic_statuses[i];

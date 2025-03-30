@@ -929,11 +929,11 @@ void test_args()
             "four=4"
         };
         UwValue args = uw_parse_kvargs(
-            UW_LENGTH_OF(argv),
+            UW_LENGTH(argv),
             argv
         );
         TEST(uw_is_map(&args));
-        for(unsigned i = 0; i < UW_LENGTH_OF(argv); i++) {{
+        for(unsigned i = 0; i < UW_LENGTH(argv); i++) {{
             UwValue k = UwNull();
             UwValue v = UwNull();
             TEST(uw_map_item(&args, i, &k, &v));

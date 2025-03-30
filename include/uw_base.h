@@ -15,7 +15,7 @@ extern "C" {
 #endif
 
 
-#define UW_LENGTH_OF(array)  (sizeof(array) / sizeof((array)[0]))  // get array length
+#define UW_LENGTH(array)  (sizeof(array) / sizeof((array)[0]))  // get array length
 
 /****************************************************************
  * Assertions and panic
