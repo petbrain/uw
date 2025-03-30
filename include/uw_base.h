@@ -316,6 +316,31 @@ typedef struct {
 #define uw_assert_file(value)      uw_assert(uw_is_file    (value))
 #define uw_assert_stringio(value)  uw_assert(uw_is_stringio(value))
 
+/*
+ * Argument validation macro:
+ */
+#define uw_expect(value_type, arg)  \
+    do {  \
+        if (!uw_is_##value_type(_Generic((arg),  \
+                _UwValue:   &(arg), \
+                UwValuePtr: (arg)   \
+            ))) {  \
+            if (uw_error(_Generic((arg),  \
+                    _UwValue:   &(arg), \
+                    UwValuePtr: (arg)))) {  \
+                return _Generic((arg),  \
+                    _UwValue:   uw_move, \
+                    UwValuePtr: uw_clone  \
+                )(_Generic((arg),  \
+                    _UwValue:   &(arg), \
+                    UwValuePtr: arg  \
+                ));  \
+            }  \
+            return UwError(UW_ERROR_INCOMPATIBLE_TYPE);  \
+        }  \
+    } while (false)
+
+
 extern UwType** _uw_types;
 /*
  * Global list of types initialized with built-in types.

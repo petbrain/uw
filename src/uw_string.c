@@ -2397,9 +2397,7 @@ unsigned uw_string_skip_chars(UwValuePtr str, unsigned position, char32_t* skipc
 
 UwResult _uw_string_to_int_v(_UwValue str)
 {
-    if (uw_error(&str)) {
-        return uw_move(&str);
-    }
+    uw_expect(string, str);
     UwValue result = _uw_string_to_int_p(&str);
     uw_destroy(&str);
     return uw_move(&result);
@@ -2407,9 +2405,7 @@ UwResult _uw_string_to_int_v(_UwValue str)
 
 UwResult _uw_string_to_int_p(UwValuePtr str)
 {
-    if (!uw_is_string(str)) {
-        return UwError(UW_ERROR_INCOMPATIBLE_TYPE);
-    }
+    uw_expect(string, str);
     UW_CSTRING_LOCAL(s, str);
     UwValue result = UwNull();
     errno = 0;
@@ -2426,9 +2422,7 @@ UwResult _uw_string_to_int_p(UwValuePtr str)
 
 UwResult _uw_string_to_float_v(_UwValue str)
 {
-    if (uw_error(&str)) {
-        return uw_move(&str);
-    }
+    uw_expect(string, str);
     UwValue result = _uw_string_to_float_p(&str);
     uw_destroy(&str);
     return uw_move(&result);
@@ -2436,9 +2430,7 @@ UwResult _uw_string_to_float_v(_UwValue str)
 
 UwResult _uw_string_to_float_p(UwValuePtr str)
 {
-    if (!uw_is_string(str)) {
-        return UwError(UW_ERROR_INCOMPATIBLE_TYPE);
-    }
+    uw_expect(string, str);
     UW_CSTRING_LOCAL(s, str);
     errno = 0;
     UwValue result = UwFloat(strtod(s, nullptr));
