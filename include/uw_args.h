@@ -6,11 +6,14 @@ extern "C" {
 
 UwResult uw_parse_kvargs(int argc, char* argv[]);
 /*
- * Parse argv as key=value. If argument contains no '=', then value is null.
+ * The function returns a mapping.
  *
- * key for argv[0] is 0.
+ * The encoding for arguments is assumed to be UTF-8.
  *
- * Assume argv in utf-8
+ * Arguments starting from 1 are expected in the form of key=value.
+ * If an argument contains no '=', it goes to key and the value is set to null.
+ *
+ * argv[0] is added to the mapping as is under key 0.
  */
 
 #ifdef __cplusplus
