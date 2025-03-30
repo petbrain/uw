@@ -300,12 +300,8 @@ bool _uw_list_append(UwValuePtr list, UwValuePtr item)
     return _uw_list_append_item(list->type_id, get_data_ptr(list), &v, list);
 }
 
-bool _uw_list_append_item(UwTypeId type_id, _UwList* list, UwValuePtr item, UwValuePtr parent)
+static bool grow_list(UwTypeId type_id, _UwList* list)
 {
-    if (uw_is_status(item)) {
-        // prohibit appending Status values
-        panic_status();
-    }
     uw_assert(list->length <= list->capacity);
 
     if (list->length == list->capacity) {
@@ -318,6 +314,18 @@ bool _uw_list_append_item(UwTypeId type_id, _UwList* list, UwValuePtr item, UwVa
         if (!_uw_list_resize(type_id, list, new_capacity)) {
             return false;
         }
+    }
+    return true;
+}
+
+bool _uw_list_append_item(UwTypeId type_id, _UwList* list, UwValuePtr item, UwValuePtr parent)
+{
+    if (uw_is_status(item)) {
+        // prohibit appending Status values
+        panic_status();
+    }
+    if (!grow_list(type_id, list)) {
+        return false;
     }
     _uw_embrace(parent, item);
     list->items[list->length] = uw_move(item);
@@ -370,6 +378,47 @@ failure:
     // consume args
     _uw_destroy_args(ap);
     return uw_move(&error);
+}
+
+bool _uw_list_insert_p(UwValuePtr list, unsigned index, UwValuePtr item)
+{
+    if (uw_is_status(item)) {
+        // prohibit appending Status values
+        panic_status();
+    }
+
+    uw_assert_list(list);
+    _UwList* _list = get_data_ptr(list);
+
+    UwValue v = uw_clone(item);
+    if (uw_error(&v)) {
+        uw_destroy(&v);
+        return false;
+    }
+    if (index > _list->length) {
+        return false;
+    }
+    if (!grow_list(list->type_id, _list)) {
+        return false;
+    }
+    _uw_embrace(list, item);
+    if (index < _list->length) {
+        memmove(&_list->items[index + 1], &_list->items[index], (_list->length - index) * sizeof(_UwValue));
+    }
+    _list->items[index] = uw_move(&v);
+    _list->length++;
+    return true;
+}
+
+bool _uw_list_insert_v(UwValuePtr list, unsigned index, _UwValue item)
+{
+    if (uw_error(&item)) {
+        uw_destroy(&item);
+        return false;
+    }
+    bool result = _uw_list_insert_p(list, index, &item);
+    uw_destroy(&item);
+    return result;
 }
 
 UwResult uw_list_item(UwValuePtr self, int index)
