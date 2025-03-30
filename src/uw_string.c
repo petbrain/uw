@@ -2397,6 +2397,9 @@ unsigned uw_string_skip_chars(UwValuePtr str, unsigned position, char32_t* skipc
 
 UwResult _uw_string_to_int_v(_UwValue str)
 {
+    if (uw_error(&str)) {
+        return uw_move(&str);
+    }
     UwValue result = _uw_string_to_int_p(&str);
     uw_destroy(&str);
     return uw_move(&result);
@@ -2423,6 +2426,9 @@ UwResult _uw_string_to_int_p(UwValuePtr str)
 
 UwResult _uw_string_to_float_v(_UwValue str)
 {
+    if (uw_error(&str)) {
+        return uw_move(&str);
+    }
     UwValue result = _uw_string_to_float_p(&str);
     uw_destroy(&str);
     return uw_move(&result);
