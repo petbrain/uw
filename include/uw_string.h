@@ -329,6 +329,43 @@ static inline bool _uw_substring_eq_u8_wrapper(UwValuePtr a, unsigned start_pos,
     return _uw_substring_eq_u8(a, start_pos, end_pos, (char8_t*) b);
 }
 
+
+#define uw_startswith(str, prefix) _Generic((prefix), \
+             char*: _uw_startswith_u8_wrapper,  \
+          char8_t*: _uw_startswith_u8,          \
+         char32_t*: _uw_startswith_u32,         \
+        UwValuePtr: _uw_startswith              \
+    )((str), (prefix))
+
+bool  uw_startswith_cstr(UwValuePtr str, char*      prefix);
+bool _uw_startswith_u8  (UwValuePtr str, char8_t*   prefix);
+bool _uw_startswith_u32 (UwValuePtr str, char32_t*  prefix);
+bool _uw_startswith     (UwValuePtr str, UwValuePtr prefix);
+
+static inline bool _uw_startswith_u8_wrapper(UwValuePtr str, char* prefix)
+{
+    return _uw_startswith_u8(str, (char8_t*) prefix);
+}
+
+
+#define uw_endswith(str, suffix) _Generic((suffix), \
+             char*: _uw_endswith_u8_wrapper,  \
+          char8_t*: _uw_endswith_u8,          \
+         char32_t*: _uw_endswith_u32,         \
+        UwValuePtr: _uw_endswith              \
+    )((str), (suffix))
+
+bool  uw_endswith_cstr(UwValuePtr str, char*      suffix);
+bool _uw_endswith_u8  (UwValuePtr str, char8_t*   suffix);
+bool _uw_endswith_u32 (UwValuePtr str, char32_t*  suffix);
+bool _uw_endswith     (UwValuePtr str, UwValuePtr suffix);
+
+static inline bool _uw_endswith_u8_wrapper(UwValuePtr str, char* suffix)
+{
+    return _uw_endswith_u8(str, (char8_t*) suffix);
+}
+
+
 /****************************************************************
  * Split functions.
  * Return list of strings.

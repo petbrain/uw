@@ -725,6 +725,23 @@ void test_list()
         TEST(uw_equal(&v, " first line,second line,  third line"));
         //uw_dump(stderr, &v);
     }
+
+    { // test startswith/endswith
+        UwValue str = uw_create_string("hello world");
+        TEST(uw_startswith(&str, "hello"));
+        TEST(!uw_startswith(&str, "world"));
+        TEST(uw_endswith(&str, "world"));
+        TEST(!uw_endswith(&str, "hello"));
+    }
+    {
+        UwValue str = uw_create_string(u8"ความคืบหน้า");
+        TEST(uw_startswith(&str, u8"ความ"));
+        TEST(uw_startswith(&str, U"ความ"));
+        TEST(!uw_startswith(&str, "wow"));
+        TEST(uw_endswith(&str, u8"คืบหน้า"));
+        TEST(uw_endswith(&str, U"คืบหน้า"));
+        TEST(!uw_endswith(&str, "wow"));
+    }
 }
 
 void test_map()

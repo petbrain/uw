@@ -1498,6 +1498,57 @@ bool _uw_substring_eq(UwValuePtr a, unsigned start_pos, unsigned end_pos, UwValu
     return get_str_methods(a)->equal(_uw_string_char_ptr(a, start_pos), b, 0, end_pos - start_pos);
 }
 
+
+bool uw_startswith_cstr(UwValuePtr str, char* prefix)
+{
+    return uw_substring_eq_cstr(str, 0, strlen(prefix), prefix);
+}
+
+bool _uw_startswith_u8(UwValuePtr str, char8_t* prefix)
+{
+    return _uw_substring_eq_u8(str, 0, utf8_strlen(prefix), prefix);
+}
+
+bool _uw_startswith_u32(UwValuePtr str, char32_t* prefix)
+{
+    return _uw_substring_eq_u32(str, 0, u32_strlen(prefix), prefix);
+}
+
+bool _uw_startswith(UwValuePtr str, UwValuePtr prefix)
+{
+    return _uw_substring_eq(str, 0, uw_strlen(prefix), prefix);
+}
+
+
+bool  uw_endswith_cstr(UwValuePtr str, char* suffix)
+{
+    unsigned str_len = uw_strlen(str);
+    unsigned suffix_len = strlen(suffix);
+    return uw_substring_eq_cstr(str, str_len - suffix_len, str_len, suffix);
+}
+
+bool _uw_endswith_u8(UwValuePtr str, char8_t* suffix)
+{
+    unsigned str_len = uw_strlen(str);
+    unsigned suffix_len = utf8_strlen(suffix);
+    return _uw_substring_eq_u8(str, str_len - suffix_len, str_len, suffix);
+}
+
+bool _uw_endswith_u32(UwValuePtr str, char32_t*  suffix)
+{
+    unsigned str_len = uw_strlen(str);
+    unsigned suffix_len = u32_strlen(suffix);
+    return _uw_substring_eq_u32(str, str_len - suffix_len, str_len, suffix);
+}
+
+bool _uw_endswith(UwValuePtr str, UwValuePtr suffix)
+{
+    unsigned str_len = uw_strlen(str);
+    unsigned suffix_len = uw_strlen(suffix);
+    return _uw_substring_eq(str, str_len - suffix_len, str_len, suffix);
+}
+
+
 CStringPtr uw_string_to_cstring(UwValuePtr str)
 {
     uw_assert_string(str);
