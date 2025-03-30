@@ -294,7 +294,7 @@ bool _uw_list_append(UwValuePtr list, UwValuePtr item)
 
     UwValue v = uw_clone(item);
     if (uw_error(&v)) {
-        uw_destroy(&v);  // make error checker happy
+        uw_destroy(&v);
         return false;
     }
     return _uw_list_append_item(list->type_id, get_data_ptr(list), &v, list);

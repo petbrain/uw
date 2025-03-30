@@ -2266,7 +2266,6 @@ UwResult _uw_strcat_ap_p(va_list ap)
     va_list temp_ap;
     va_copy(temp_ap, ap);
     for (unsigned arg_no = 0;;) {
-        // arg is not auto-cleaned here because we don't consume it yet
         UwValuePtr arg = va_arg(temp_ap, UwValuePtr);
         if (!arg) {
             break;
@@ -2298,7 +2297,6 @@ UwResult _uw_strcat_ap_p(va_list ap)
         unsigned charptr_index = 0;
         va_copy(temp_ap, ap);
         for (;;) {
-            // arg is not auto-cleaned here because we don't consume it yet
             UwValuePtr arg = va_arg(temp_ap, UwValuePtr);
             if (!arg) {
                 break;
