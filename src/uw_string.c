@@ -2029,7 +2029,11 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
 
             if (maxsplit) {
                 if (0 == --maxsplit) {
-                    i = len;
+                    do {
+                        ptr += char_size;
+                        c = strmeth->get_char(ptr);
+                        substr_width = update_char_width(substr_width, c);
+                    } while (++i < len);
                     break;
                 }
             }

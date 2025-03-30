@@ -633,6 +633,12 @@ void test_string()
         UwValue last = uw_list_item(&list2, 1);
         TEST(uw_equal(&first, U"สบาย/สบาย/yo"));
         TEST(uw_equal(&last, "yo"));
+        UwValue list3 = uw_string_split_chr(&str, '/', 1);
+        //uw_dump(stderr, &list3);
+        UwValue first3 = uw_list_item(&list3, 0);
+        UwValue last3 = uw_list_item(&list3, 1);
+        TEST(uw_equal(&first3, U"สบาย"));
+        TEST(uw_equal(&last3, U"สบาย/yo/yo"));
         UwValue v = uw_list_join('/', &list);
         TEST(uw_equal(&v, U"สบาย/สบาย/yo/yo"));
     }
