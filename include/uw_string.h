@@ -374,6 +374,36 @@ static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* 
     return _uw_string_split_strict_u8(str, (char8_t*) splitter, maxsplit);
 }
 
+
+/****************************************************************
+ * Conversion functions.
+ *
+ * Generics allow to pass argument either by value or by reference.
+ * When passed by value, the function destroys it.
+ * Caveat: do not pass local variables by values,
+ *         this form of invocation is only for values returned
+ *         by functions, i.e.
+ *
+ *         uw_string_to_int(uw_map_get(my_map, "num_entities"));
+ */
+
+#define uw_string_to_int(str) _Generic((str),  \
+        _UwValue:   _uw_string_to_int_v  \
+        UwValuePtr: _uw_string_to_int_p  \
+    )(str)
+
+UwResult _uw_string_to_int_v(_UwValue str);
+UwResult _uw_string_to_int_p(UwValuePtr str);
+
+#define uw_string_to_float(str) _Generic((str),  \
+        _UwValue:   _uw_string_to_float_v  \
+        UwValuePtr: _uw_string_to_float_p  \
+    )(str)
+
+UwResult _uw_string_to_float_v(_UwValue str);
+UwResult _uw_string_to_float_p(UwValuePtr str);
+
+
 /****************************************************************
  * String variable declarations and rvalues with initialization
  */

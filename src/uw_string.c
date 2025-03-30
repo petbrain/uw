@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <string.h>
 
 #include <libpussy/dump.h>
@@ -2161,4 +2162,51 @@ unsigned uw_string_skip_chars(UwValuePtr str, unsigned position, char32_t* skipc
         charptr += char_size;
     }
     return length;
+}
+
+UwResult _uw_string_to_int_v(_UwValue str)
+{
+    UwValue result = _uw_string_to_int_p(&str);
+    uw_destroy(&str);
+    return uw_move(&result);
+}
+
+UwResult _uw_string_to_int_p(UwValuePtr str)
+{
+    if (!uw_is_string(str)) {
+        return UwError(UW_ERROR_INCOMPATIBLE_TYPE);
+    }
+    UW_CSTRING_LOCAL(s, str);
+    UwValue result = UwNull();
+    errno = 0;
+    if (uw_char_at(str, uw_string_skip_spaces(str, 0)) == '-') {
+        result = UwSigned(strtol(s, nullptr, 0));
+    } else {
+        result = UwUnsigned(strtoul(s, nullptr, 0));
+    }
+    if (errno) {
+        result = UwErrno(errno);
+    }
+    return uw_move(&result);
+}
+
+UwResult _uw_string_to_float_v(_UwValue str)
+{
+    UwValue result = _uw_string_to_float_p(&str);
+    uw_destroy(&str);
+    return uw_move(&result);
+}
+
+UwResult _uw_string_to_float_p(UwValuePtr str)
+{
+    if (!uw_is_string(str)) {
+        return UwError(UW_ERROR_INCOMPATIBLE_TYPE);
+    }
+    UW_CSTRING_LOCAL(s, str);
+    errno = 0;
+    UwValue result = UwFloat(strtod(s, nullptr));
+    if (errno) {
+        result = UwErrno(errno);
+    }
+    return uw_move(&result);
 }
