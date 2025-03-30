@@ -2149,19 +2149,6 @@ UwResult _uw_strcat_va_p(...)
     return uw_move(&result);
 }
 
-static void consume_args(va_list ap)
-/*
- * Same as _uw_destroy_args() except that it uses UwNull for terminator.
- */
-{
-    for (;;) {{
-        UwValue arg = va_arg(ap, _UwValue);
-        if (uw_is_null(&arg)) {
-            break;
-        }
-    }}
-}
-
 UwResult _uw_strcat_ap_v(va_list ap)
 {
     // default error is OOM unless some arg is a status
@@ -2178,14 +2165,14 @@ UwResult _uw_strcat_ap_v(va_list ap)
         // arg is not auto-cleaned here because we don't consume it yet
         _UwValue arg = va_arg(temp_ap, _UwValue);
         arg_no++;
-        if (uw_is_null(&arg)) {
-            break;
-        }
         if (uw_is_status(&arg)) {
+            if (uw_va_end(&arg)) {
+                break;
+            }
             uw_destroy(&error);
             error = uw_clone(&arg);
             va_end(temp_ap);
-            consume_args(ap);
+            _uw_destroy_args(ap);
             return uw_move(&error);
         }
         if (uw_is_string(&arg)) {
@@ -2202,7 +2189,7 @@ UwResult _uw_strcat_ap_v(va_list ap)
             _uw_set_status_desc(&error, "Bad argument %u type for uw_strcat: %u, %s",
                                 arg_no, arg.type_id, uw_get_type_name(arg.type_id));
             va_end(temp_ap);
-            consume_args(ap);
+            _uw_destroy_args(ap);
             return uw_move(&error);
         }
     }
@@ -2218,7 +2205,7 @@ UwResult _uw_strcat_ap_v(va_list ap)
         for (;;) {
             // arg is not auto-cleaned here because we don't consume it yet
             _UwValue arg = va_arg(temp_ap, _UwValue);
-            if (uw_is_null(&arg)) {
+            if (uw_va_end(&arg)) {
                 break;
             }
             if (uw_is_charptr(&arg)) {
@@ -2251,7 +2238,7 @@ UwResult _uw_strcat_ap_v(va_list ap)
     unsigned charptr_index = 0;
     for (;;) {{
         UwValue arg = va_arg(ap, _UwValue);
-        if (uw_is_null(&arg)) {
+        if (uw_va_end(&arg)) {
             return uw_move(&str);
         }
         if (uw_is_string(&arg)) {
@@ -2265,7 +2252,7 @@ UwResult _uw_strcat_ap_v(va_list ap)
             charptr_index++;
         }
     }}
-    consume_args(ap);
+    _uw_destroy_args(ap);
     return uw_move(&error);
 }
 
