@@ -505,3 +505,113 @@ UwResult _uw_file_open(UwValuePtr file_name, int flags, mode_t mode)
     }
     return uw_move(&file);
 }
+
+/****************************************************************
+ * Path functions, probably should be separated
+ */
+
+UwResult _uw_basename_v(_UwValue filename)
+{
+    if (uw_is_charptr(&filename)) {
+        if (!uw_charptr_to_string_inplace(&filename)) {
+            return UwOOM();
+        }
+    } else {
+        uw_expect(string, filename);
+    }
+    UwValue result = _uw_basename_p(&filename);
+    uw_destroy(&filename);
+    return uw_move(&result);
+}
+
+UwResult _uw_basename_p(UwValuePtr filename)
+{
+    UwValue parts = UwNull();
+    if (uw_is_charptr(filename)) {
+        UwValue f = uw_clone(filename);
+        parts = uw_string_rsplit_chr(&f, '/', 1);
+    } else {
+        uw_expect(string, filename);
+        parts = uw_string_rsplit_chr(filename, '/', 1);
+    }
+    return uw_list_item(&parts, -1);
+}
+
+UwResult _uw_dirname_v(_UwValue filename)
+{
+    if (uw_is_charptr(&filename)) {
+        if (!uw_charptr_to_string_inplace(&filename)) {
+            return UwOOM();
+        }
+    } else {
+        uw_expect(string, filename);
+    }
+    UwValue result = _uw_dirname_p(&filename);
+    uw_destroy(&filename);
+    return uw_move(&result);
+}
+
+UwResult _uw_dirname_p(UwValuePtr filename)
+{
+    UwValue parts = UwNull();
+    if (uw_is_charptr(filename)) {
+        UwValue f = uw_clone(filename);
+        parts = uw_string_rsplit_chr(&f, '/', 1);
+    } else {
+        uw_expect(string, filename);
+        parts = uw_string_rsplit_chr(filename, '/', 1);
+    }
+    return uw_list_item(&parts, 0);
+}
+
+UwResult _uw_path_v(...)
+{
+    UwValue parts = uw_create(UwTypeId_List);
+    va_list ap;
+    va_start(ap);
+    for (;;) {{
+        UwValue arg = va_arg(ap, _UwValue);
+        if (uw_is_status(&arg)) {
+            if (uw_va_end(&arg)) {
+                break;
+            }
+            _uw_destroy_args(ap);
+            va_end(ap);
+            return uw_move(&arg);
+        }
+        if (uw_is_string(&arg) || uw_is_charptr(&arg)) {
+            if (!uw_list_append(&parts, &arg)) {
+                _uw_destroy_args(ap);
+                va_end(ap);
+                return UwOOM();
+            }
+        }
+    }}
+    va_end(ap);
+    return uw_list_join("/", &parts);
+}
+
+UwResult _uw_path_p(...)
+{
+    UwValue parts = uw_create(UwTypeId_List);
+    va_list ap;
+    va_start(ap);
+    for (;;) {
+        UwValuePtr arg = va_arg(ap, UwValuePtr);
+        if (!arg) {
+            break;
+        }
+        if (uw_error(arg)) {
+            va_end(ap);
+            return uw_clone(arg);
+        }
+        if (uw_is_string(arg) || uw_is_charptr(arg)) {
+            if (!uw_list_append(&parts, arg)) {
+                va_end(ap);
+                return UwOOM();
+            }
+        }
+    }
+    va_end(ap);
+    return uw_list_join("/", &parts);
+}

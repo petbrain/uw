@@ -847,6 +847,23 @@ void test_file()
         TEST(uw_ok(&status));
     }
     TEST(uw_equal(&line, c));
+
+    { // test path functions
+        UwValue basename = uw_basename(uw_create_string("/bin/bash"));
+        //uw_dump(stderr, &basename);
+        TEST(uw_equal(&basename, "bash"));
+        UwValue dirname = uw_dirname(uw_create_string("/bin/bash"));
+        //uw_dump(stderr, &dirname);
+        TEST(uw_equal(&dirname, "/bin"));
+        UwValue path = uw_path(UwChar8Ptr(""), UwChar8Ptr("bin"), UwChar8Ptr("bash"));
+        TEST(uw_equal(&path, "/bin/bash"));
+        //uw_dump(stderr, &path);
+        UwValue part1 = uw_create_string("");
+        UwValue part2 = uw_create_string("bin");
+        UwValue part3 = uw_create_string("bash");
+        UwValue path2 = uw_path(&part1, &part2, &part3);
+        TEST(uw_equal(&path2, "/bin/bash"));
+    }
 }
 
 void test_string_io()
