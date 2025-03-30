@@ -433,7 +433,7 @@ static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* 
  */
 
 #define uw_string_to_int(str) _Generic((str),  \
-        _UwValue:   _uw_string_to_int_v  \
+        _UwValue:   _uw_string_to_int_v, \
         UwValuePtr: _uw_string_to_int_p  \
     )(str)
 
@@ -441,7 +441,7 @@ UwResult _uw_string_to_int_v(_UwValue str);
 UwResult _uw_string_to_int_p(UwValuePtr str);
 
 #define uw_string_to_float(str) _Generic((str),  \
-        _UwValue:   _uw_string_to_float_v  \
+        _UwValue:   _uw_string_to_float_v, \
         UwValuePtr: _uw_string_to_float_p  \
     )(str)
 
