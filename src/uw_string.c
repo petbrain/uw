@@ -2056,16 +2056,38 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
     return uw_move(&result);
 }
 
-UwResult _uw_strcat_va(...)
+UwResult _uw_strcat_va_v(...)
 {
     va_list ap;
     va_start(ap);
-    UwValue result = uw_strcat_ap(ap);
+    UwValue result = _uw_strcat_ap_v(ap);
     va_end(ap);
     return uw_move(&result);
 }
 
-UwResult uw_strcat_ap(va_list ap)
+UwResult _uw_strcat_va_p(...)
+{
+    va_list ap;
+    va_start(ap);
+    UwValue result = _uw_strcat_ap_p(ap);
+    va_end(ap);
+    return uw_move(&result);
+}
+
+static void consume_args(va_list ap)
+/*
+ * Same as _uw_destroy_args() except that it uses UwNull for terminator.
+ */
+{
+    for (;;) {{
+        UwValue arg = va_arg(ap, _UwValue);
+        if (uw_is_null(&arg)) {
+            break;
+        }
+    }}
+}
+
+UwResult _uw_strcat_ap_v(va_list ap)
 {
     // default error is OOM unless some arg is a status
     UwValue error = UwOOM();
@@ -2081,14 +2103,14 @@ UwResult uw_strcat_ap(va_list ap)
         // arg is not auto-cleaned here because we don't consume it yet
         _UwValue arg = va_arg(temp_ap, _UwValue);
         arg_no++;
+        if (uw_is_null(&arg)) {
+            break;
+        }
         if (uw_is_status(&arg)) {
-            if (uw_va_end(&arg)) {
-                break;
-            }
             uw_destroy(&error);
             error = uw_clone(&arg);
             va_end(temp_ap);
-            _uw_destroy_args(ap);
+            consume_args(ap);
             return uw_move(&error);
         }
         if (uw_is_string(&arg)) {
@@ -2105,7 +2127,7 @@ UwResult uw_strcat_ap(va_list ap)
             _uw_set_status_desc(&error, "Bad argument %u type for uw_strcat: %u, %s",
                                 arg_no, arg.type_id, uw_get_type_name(arg.type_id));
             va_end(temp_ap);
-            _uw_destroy_args(ap);
+            consume_args(ap);
             return uw_move(&error);
         }
     }
@@ -2121,7 +2143,7 @@ UwResult uw_strcat_ap(va_list ap)
         for (;;) {
             // arg is not auto-cleaned here because we don't consume it yet
             _UwValue arg = va_arg(temp_ap, _UwValue);
-            if (uw_va_end(&arg)) {
+            if (uw_is_null(&arg)) {
                 break;
             }
             if (uw_is_charptr(&arg)) {
@@ -2146,12 +2168,15 @@ UwResult uw_strcat_ap(va_list ap)
 
     // allocate resulting string
     UwValue str = uw_create_empty_string(result_len, max_char_size);
+    if (uw_error(&str)) {
+        return uw_move(&str);
+    }
 
     // concatenate
     unsigned charptr_index = 0;
     for (;;) {{
         UwValue arg = va_arg(ap, _UwValue);
-        if (uw_va_end(&arg)) {
+        if (uw_is_null(&arg)) {
             return uw_move(&str);
         }
         if (uw_is_string(&arg)) {
@@ -2165,8 +2190,102 @@ UwResult uw_strcat_ap(va_list ap)
             charptr_index++;
         }
     }}
-    _uw_destroy_args(ap);
+    consume_args(ap);
     return uw_move(&error);
+}
+
+UwResult _uw_strcat_ap_p(va_list ap)
+{
+    // count the number of args, check their types,
+    // calculate total length and max char width
+    unsigned result_len = 0;
+    uint8_t max_char_size = 1;
+    unsigned num_charptrs = 0;
+    va_list temp_ap;
+    va_copy(temp_ap, ap);
+    for (unsigned arg_no = 0;;) {
+        // arg is not auto-cleaned here because we don't consume it yet
+        UwValuePtr arg = va_arg(temp_ap, UwValuePtr);
+        if (!arg) {
+            break;
+        }
+        arg_no++;
+        if (uw_is_string(arg)) {
+            result_len += uw_strlen(arg);
+            uint8_t char_size = uw_string_char_size(arg);
+            if (max_char_size < char_size) {
+                max_char_size = char_size;
+            }
+        } else if (uw_is_charptr(arg)) {
+            num_charptrs++;
+        } else {
+            UwValue error = UwError(UW_ERROR_INCOMPATIBLE_TYPE);
+            _uw_set_status_desc(&error, "Bad argument %u type for uw_strcat: %u, %s",
+                                arg_no, arg->type_id, uw_get_type_name(arg->type_id));
+            va_end(temp_ap);
+            return uw_move(&error);
+        }
+    }
+    va_end(temp_ap);
+
+    // can allocate array for CharPtr now
+    unsigned charptr_len[num_charptrs + 1];
+
+    if (num_charptrs) {
+        // need one more pass to get lengths and char sizes of CharPtr items
+        unsigned charptr_index = 0;
+        va_copy(temp_ap, ap);
+        for (;;) {
+            // arg is not auto-cleaned here because we don't consume it yet
+            UwValuePtr arg = va_arg(temp_ap, UwValuePtr);
+            if (!arg) {
+                break;
+            }
+            if (uw_is_charptr(arg)) {
+                num_charptrs++;
+                uint8_t char_size;
+                unsigned len = _uw_charptr_strlen2(arg, &char_size);
+
+                charptr_len[charptr_index++] = len;
+
+                result_len += len;
+                if (max_char_size < char_size) {
+                    max_char_size = char_size;
+                }
+            }
+        }
+        va_end(temp_ap);
+    }
+
+    if (result_len == 0) {
+        return UwString();
+    }
+
+    // allocate resulting string
+    UwValue str = uw_create_empty_string(result_len, max_char_size);
+    if (uw_error(&str)) {
+        return uw_move(&str);
+    }
+
+    // concatenate
+    unsigned charptr_index = 0;
+    for (;;) {{
+        UwValuePtr arg = va_arg(ap, UwValuePtr);
+        if (!arg) {
+            return uw_move(&str);
+        }
+        if (uw_is_string(arg)) {
+            if (!_uw_string_append(&str, arg)) {
+                break;
+            }
+        } else if (uw_is_charptr(arg)) {
+            if (!_uw_string_append_charptr(&str, arg, charptr_len[charptr_index], max_char_size)) {
+                break;
+            }
+            charptr_index++;
+        }
+    }}
+    return UwOOM();
 }
 
 unsigned uw_string_skip_spaces(UwValuePtr str, unsigned position)

@@ -605,10 +605,20 @@ void test_string()
         TEST(uw_strlen(&v) == 6);
     }
 
-    { // test uw_strcat
+    { // test uw_strcat (by value)
         UwValue v = uw_strcat(
             uw_create_string("Hello! "), UwCharPtr("Thanks"), UwChar32Ptr(U"🙏"), UwChar8Ptr(u8"สวัสดี")
         );
+        TEST(uw_equal(&v, U"Hello! Thanks🙏สวัสดี"));
+        //uw_dump(stderr, &v);
+    }
+
+    { // test uw_strcat (by reference)
+        UwValue s1 = uw_create_string("Hello! ");
+        UwValue s2 = UwCharPtr("Thanks");
+        UwValue s3 = UwChar32Ptr(U"🙏");
+        UwValue s4 = UwChar8Ptr(u8"สวัสดี");
+        UwValue v = uw_strcat(&s1, &s2, &s3, &s4);
         TEST(uw_equal(&v, U"Hello! Thanks🙏สวัสดี"));
         //uw_dump(stderr, &v);
     }

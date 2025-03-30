@@ -159,11 +159,19 @@ uint8_t u32_char_size(char32_t* str, unsigned max_len);
 #   define uw_char_upper(c)  toupper(c)
 #endif
 
-UwResult _uw_strcat_va(...);
+UwResult _uw_strcat_va_v(...);
+UwResult _uw_strcat_va_p(...);
 
-#define uw_strcat(...)  _uw_strcat_va(__VA_ARGS__, UwVaEnd())
+#define uw_strcat(str, ...) _Generic((str),  \
+        _UwValue:   _uw_strcat_va_v,  \
+        UwValuePtr: _uw_strcat_va_p   \
+    )((str) __VA_OPT__(,) __VA_ARGS__, UwNull())
 
-UwResult uw_strcat_ap(va_list ap);
+// Note: using UwNull instead of UwVaEnd in uw_strcat because UwNull is all zeros
+// and can be checked as both pointer and value.
+
+UwResult _uw_strcat_ap_v(va_list ap);
+UwResult _uw_strcat_ap_p(va_list ap);
 
 unsigned uw_string_skip_spaces(UwValuePtr str, unsigned position);
 /*
