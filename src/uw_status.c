@@ -200,38 +200,6 @@ static void status_hash(UwValuePtr self, UwHashContext* ctx)
 {
     _uw_hash_uint64(ctx, self->type_id);
     _uw_hash_uint64(ctx, self->status_code);
-    if (self->is_error) {
-        char* file_name;
-        unsigned line_number;
-        if (self->has_status_data) {
-            file_name = self->status_data->file_name;
-            line_number = self->status_data->line_number;
-        } else {
-            file_name = self->file_name;
-            line_number = self->line_number;
-        }
-
-        _uw_hash_uint64(ctx, line_number);
-
-        for (;;) {
-            union {
-                struct {
-                    char32_t a;
-                    char32_t b;
-                };
-                uint64_t i64;
-            } data;
-            data.a = *file_name++;
-            if (data.a == 0) {
-                break;
-            }
-            data.b = *file_name++;
-            _uw_hash_uint64(ctx, data.i64);
-            if (data.b == 0) {
-                break;
-            }
-        }
-    }
     if (self->status_code == UW_ERROR_ERRNO) {
         _uw_hash_uint64(ctx, self->uw_errno);
     }
