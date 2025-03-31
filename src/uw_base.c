@@ -942,3 +942,26 @@ UwTypeId _uw_subtype(UwType* type, char* name, UwTypeId ancestor_id,
 
     return type_id;
 }
+
+void uw_dump_types(FILE* fp)
+{
+    fputs( "=== UW types ===\n", fp);
+    for (UwTypeId i = 0; i < num_uw_types; i++) {
+        UwType* t = _uw_types[i];
+        fprintf(fp, "%u: %s; ancestor=%u (%s)\n",
+                t->id, t->name, t->ancestor_id, _uw_types[t->ancestor_id]->name);
+        if (t->num_interfaces) {
+            _UwInterface* iface = t->interfaces;
+            for (unsigned j = 0; j < t->num_interfaces; j++, iface++) {
+                unsigned num_methods = get_num_interface_methods(iface->interface_id);
+                void** methods = iface->interface_methods;
+                fprintf(fp, "    interface %u (%s):\n        ",
+                        iface->interface_id, uw_get_interface_name(iface->interface_id));
+                for (unsigned k = 0; k < num_methods; k++, methods++) {
+                    fprintf(fp, "%p ", *methods);
+                }
+                fputc('\n', fp);
+            }
+        }
+    }
+}

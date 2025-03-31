@@ -554,6 +554,8 @@ static inline bool uw_is_subtype(UwValuePtr value, UwTypeId type_id)
 static inline char* _uw_get_type_name_by_id     (uint8_t type_id)  { return _uw_types[type_id]->name; }
 static inline char* _uw_get_type_name_from_value(UwValuePtr value) { return _uw_types[value->type_id]->name; }
 
+void uw_dump_types(FILE* fp);
+
 /****************************************************************
  * Statuses
  */
