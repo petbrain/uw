@@ -864,6 +864,13 @@ void test_file()
         UwValue part3 = uw_create_string("bash");
         UwValue path2 = uw_path(&part1, &part2, &part3);
         TEST(uw_equal(&path2, "/bin/bash"));
+
+        UwValue s2 = uw_create_string("blahblahblah");
+        //uw_dump(stderr, &s2);
+        UwValue basename2 = uw_basename(&s2);
+        //uw_dump(stderr, &basename2);
+        TEST(uw_equal(&basename2, "blahblahblah"));
+
     }
 }
 

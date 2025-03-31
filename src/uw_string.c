@@ -2095,16 +2095,17 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
                 return UwOOM();
             }
 
-            end_i = i;
+            end_i = i - 1;
             substr_width = 0;
 
             if (maxsplit) {
                 if (0 == --maxsplit) {
                     do {
+                        i--;
                         start -= char_size;
                         c = strmeth->get_char(start);
                         substr_width = update_char_width(substr_width, c);
-                    } while (--i);
+                    } while (i);
                     break;
                 }
             }
@@ -2115,7 +2116,7 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
     }
     // create final substring
     {
-        unsigned substr_len = end_i;
+        unsigned substr_len = end_i + 1;
         UwValue substr = uw_create_empty_string(substr_len, char_width_to_char_size(substr_width));
         if (uw_error(&substr)) {
             return uw_move(&substr);
