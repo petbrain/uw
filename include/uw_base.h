@@ -68,6 +68,9 @@ typedef struct {
     };
 } _UwStructData;
 
+// forward declaration
+struct __UwStatusData;
+
 // make sure largest C type fits into 64 bits
 static_assert( sizeof(long long) <= sizeof(uint64_t) );
 
@@ -113,12 +116,30 @@ union __UwValue {
     };
 
     struct {
-        // struct and status
+        // struct
         UwTypeId /* uint16_t */ _struct_type_id;
+        int16_t _struct_padding1;
+        uint32_t _struct_padding2;
+        _UwStructData* struct_data;  // the first member of struct_data is reference count
+    };
+
+    struct {
+        // status
+        UwTypeId /* uint16_t */ _status_type_id;
         int16_t uw_errno;
-        uint32_t status_code;
-        _UwStructData* struct_data;  // struct_data starts from reference count
-                                     // this pointer can be null for status values
+        uint16_t line_number;   // not set for UW_SUCCESS
+        union {
+            uint16_t is_error;  // all bit fields are zero for UW_SUCCESS
+                                // so we can avoid bit operations when checking for success
+            struct {
+                uint16_t status_code: 15,
+                         has_status_data: 1;
+            };
+        };
+        union {
+            char* file_name;  // when has_status_data == 0, not set for UW_SUCCESS
+            struct __UwStatusData* status_data;  // when has_status_data == 1
+        };
     };
 
     struct {
@@ -148,13 +169,22 @@ union __UwValue {
 
 typedef union __UwValue _UwValue;
 
+struct __UwStatusData {
+    unsigned refcount;
+    unsigned line_number;
+    char* file_name;
+    _UwValue description;  // string
+};
+typedef struct __UwStatusData _UwStatusData;
+
+
 // make sure _UwValue structure is correct
 static_assert( offsetof(_UwValue, charptr_subtype) == 2 );
-static_assert( offsetof(_UwValue, status_code)     == 4 );
 
 static_assert( offsetof(_UwValue, bool_value) == 8 );
 static_assert( offsetof(_UwValue, charptr)    == 8 );
 static_assert( offsetof(_UwValue, struct_data) == 8 );
+static_assert( offsetof(_UwValue, status_data) == 8 );
 static_assert( offsetof(_UwValue, string_data) == 8 );
 
 static_assert( offsetof(_UwValue, str_embedded_length) == 3 );
@@ -572,7 +602,7 @@ static inline bool uw_ok(UwValuePtr status)
         // any other type means okay
         return true;
     }
-    return status->status_code == UW_SUCCESS;
+    return !status->is_error;
 }
 
 static inline bool uw_error(UwValuePtr status)
@@ -602,7 +632,7 @@ static inline bool uw_va_end(UwValuePtr status)
     return status->status_code == UW_STATUS_VA_END;
 }
 
-UwResult uw_status_desc(UwValuePtr status);
+UwResult uw_status_as_string(UwValuePtr status);
 /*
  * Get status description.
  */
@@ -805,8 +835,10 @@ void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap);
 #define __UWDECL_Status(name, _status_code)  \
     /* declare Status variable */  \
     _UwValue name = {  \
-        ._struct_type_id = UwTypeId_Status,  \
-        .status_code = _status_code  \
+        ._status_type_id = UwTypeId_Status,  \
+        .status_code = _status_code,  \
+        .line_number = __LINE__, \
+        .file_name = __FILE__ \
     }
 
 #define UWDECL_Status(name, _status_code)  \
@@ -822,7 +854,10 @@ void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap);
 #define UwOK()  \
     /* make success rvalue */  \
     ({  \
-        __UWDECL_Status(status, UW_SUCCESS);  \
+        _UwValue status = {  \
+            ._status_type_id = UwTypeId_Status,  \
+            .is_error = 0  \
+        };  \
         status;  \
     })
 
@@ -843,16 +878,21 @@ void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap);
 #define UwVaEnd()  \
     /* make VA_END rvalue */  \
     ({  \
-        __UWDECL_Status(status, UW_STATUS_VA_END);  \
+        _UwValue status = {  \
+            ._status_type_id = UwTypeId_Status,  \
+            .status_code = UW_STATUS_VA_END  \
+        };  \
         status;  \
     })
 
 #define __UWDECL_Errno(name, _errno)  \
     /* declare errno Status variable */  \
     _UwValue name = {  \
-        ._struct_type_id = UwTypeId_Status,  \
+        ._status_type_id = UwTypeId_Status,  \
         .status_code = UW_ERROR_ERRNO,  \
-        .uw_errno = _errno  \
+        .uw_errno = _errno,  \
+        .line_number = __LINE__, \
+        .file_name = __FILE__ \
     }
 
 #define UWDECL_Errno(name, _errno)  _UW_VALUE_CLEANUP __UWDECL_Errno((name), (_errno))

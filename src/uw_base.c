@@ -74,15 +74,6 @@ void _uw_dump_start(FILE* fp, UwValuePtr value, int indent)
     }
 }
 
-void _uw_dump_struct_data(FILE* fp, UwValuePtr value)
-{
-    if (value->struct_data) {
-        fprintf(fp, " data=%p refcount=%u;", value->struct_data, value->struct_data->refcount);
-    } else {
-        fprintf(fp, " data=NULL;");
-    }
-}
-
 void _uw_print_indent(FILE* fp, int indent)
 {
     for (int i = 0; i < indent; i++ ) {

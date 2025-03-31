@@ -11,12 +11,6 @@
 #include "include/uw_string.h"
 #include "uw_struct_internal.h"
 
-typedef struct {
-    _UwValue description;  // string
-} _UwStatusData;
-
-#define get_data_ptr(value)  ((_UwStatusData*) _uw_get_data_ptr((value), UwTypeId_Status))
-
 static char* basic_statuses[] = {
     [UW_SUCCESS]                   = "SUCCESS",
     [UW_STATUS_VA_END]             = "VA_END",
@@ -77,21 +71,66 @@ char* uw_status_str(uint16_t status_code)
     }
 }
 
-UwResult uw_status_desc(UwValuePtr status)
+UwResult uw_status_as_string(UwValuePtr status)
 {
     if (!status) {
         return UwString_1_12(6, '(', 'n', 'u', 'l', 'l', ')', 0, 0, 0, 0, 0, 0);
     }
     if (!uw_is_status(status)) {
-        return UwString_1_12(10, 'b', 'a', 'd', ' ', 's', 't', 'a', 't', 'u', 's', 0, 0);
+        return UwString_1_12(12, '(', 'n', 'o', 't', ' ', 's', 't', 'a', 't', 'u', 's', ')');
     }
-    _UwStatusData* status_data = get_data_ptr(status);
-    if (status_data) {
-        if (uw_is_string(&status_data->description)) {
-            return uw_clone(&status_data->description);
+    if (!status->is_error) {
+        return UwString_1_12(2, 'O', 'K', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+    char* status_str = uw_status_str(status->status_code);
+    char* file_name;
+    unsigned line_number;
+    unsigned description_length = 0;
+    uint8_t char_size = 1;
+
+    if (status->has_status_data) {
+        file_name = status->status_data->file_name;
+        line_number = status->status_data->line_number;
+        UwValuePtr desc = &status->status_data->description;
+        if (uw_is_string(desc)) {
+            description_length = uw_strlen(desc);
+            char_size = uw_string_char_size(desc);
         }
+    } else {
+        file_name = status->file_name;
+        line_number = status->line_number;
     }
-    return UwString_1_12(6, '(', 'n', 'o', 'n', 'e', ')', 0, 0, 0, 0, 0, 0);
+
+    unsigned errno_length = 0;
+    static char errno_fmt[] = "; errno %d: %s";
+    char* errno_str = "";
+    if (status->status_code == UW_ERROR_ERRNO) {
+        errno_str = strerror(status->uw_errno);
+    }
+    char errno_desc[strlen(errno_fmt) + 16 + strlen(errno_str)];
+    if (status->status_code == UW_ERROR_ERRNO) {
+        errno_length = snprintf(errno_desc, sizeof(errno_desc), errno_fmt, status->uw_errno, errno_str);
+    } else {
+        errno_desc[0] = 0;
+    }
+
+    static char fmt[] = "%s; %s:%u%s";
+    char desc[strlen(fmt) + 16 + strlen(status_str) + strlen(file_name) + errno_length];
+    unsigned length = snprintf(desc, sizeof(desc), fmt, status_str, file_name, line_number, errno_desc);
+
+    UwValue result = uw_create_empty_string(length + description_length + 2, char_size);
+    if (uw_error(&result)) {
+        goto error;
+    }
+    uw_string_append(&result, desc);
+    if (description_length) {
+        uw_string_append(&result, "; ");
+        uw_string_append(&result, &status->status_data->description);
+    }
+    return uw_move(&result);
+
+error:
+    return UwString_1_12(7, '(', 'e', 'r', 'r', 'o', 'r', ')', 0, 0, 0, 0, 0);
 }
 
 void _uw_set_status_desc(UwValuePtr status, char* fmt, ...)
@@ -106,23 +145,25 @@ void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap)
 {
     uw_assert_status(status);
 
-    _UwStatusData* status_data = get_data_ptr(status);
-    if (status_data) {
-        uw_destroy(&status_data->description);
+    if (status->has_status_data) {
+        uw_destroy(&status->status_data->description);
     } else {
+        char* file_name = status->file_name;  // file_name will be overwritten with status_data, save it
         UwValue err = _uw_struct_alloc(status, nullptr);
         if (uw_error(&err)) {
             return;
         }
-        status_data = get_data_ptr(status);
+        status->has_status_data = 1;
+        status->status_data->file_name = file_name;
+        status->status_data->line_number = status->line_number;
     }
     char* desc;
     if (vasprintf(&desc, fmt, ap) == -1) {
         return;
     }
-    status_data->description = uw_create_string(desc);
-    if (uw_error(&status_data->description)) {
-        uw_destroy(&status_data->description);
+    UwValue s = uw_create_string(desc);
+    if (uw_ok(&s)) {
+        status->status_data->description = uw_move(&s);
     }
     free(desc);
 }
@@ -135,16 +176,54 @@ static UwResult status_create(UwTypeId type_id, void* ctor_args)
 {
     // XXX use ctor_args for initializer?
 
-    // using not autocleaned variable here, no uw_move necessary on exit
-    __UWDECL_Status(result, UW_SUCCESS);
-    // do not allocate status data
-    return result;
+    return UwOK();
+}
+
+static void status_destroy(UwValuePtr self)
+{
+    if (self->has_status_data) {
+        _uw_struct_destroy(self);
+    } else {
+        self->type_id = UwTypeId_Null;
+    }
 }
 
 static void status_hash(UwValuePtr self, UwHashContext* ctx)
 {
     _uw_hash_uint64(ctx, self->type_id);
     _uw_hash_uint64(ctx, self->status_code);
+    if (self->is_error) {
+        char* file_name;
+        unsigned line_number;
+        if (self->has_status_data) {
+            file_name = self->status_data->file_name;
+            line_number = self->status_data->line_number;
+        } else {
+            file_name = self->file_name;
+            line_number = self->line_number;
+        }
+
+        _uw_hash_uint64(ctx, line_number);
+
+        for (;;) {
+            union {
+                struct {
+                    char32_t a;
+                    char32_t b;
+                };
+                uint64_t i64;
+            } data;
+            data.a = *file_name++;
+            if (data.a == 0) {
+                break;
+            }
+            data.b = *file_name++;
+            _uw_hash_uint64(ctx, data.i64);
+            if (data.b == 0) {
+                break;
+            }
+        }
+    }
     if (self->status_code == UW_ERROR_ERRNO) {
         _uw_hash_uint64(ctx, self->uw_errno);
     }
@@ -154,38 +233,34 @@ static void status_hash(UwValuePtr self, UwHashContext* ctx)
 static UwResult status_deepcopy(UwValuePtr self)
 {
     UwValue result = *self;
-    if (!result.struct_data) {
+    if (!self->has_status_data) {
         return uw_move(&result);
     }
-    result.struct_data = nullptr;
+    result.status_data = nullptr;
 
     UwValue err = _uw_struct_alloc(&result, nullptr);
     if (uw_error(&err)) {
         return uw_move(&err);
     }
 
-    _UwStatusData* status_data = get_data_ptr(self);
-    uw_destroy(&status_data->description);
-    status_data->description = uw_deepcopy(&status_data->description);
+    result.status_data->file_name = self->status_data->file_name;
+    result.status_data->line_number = self->status_data->line_number;
+    result.status_data->description = uw_deepcopy(&self->status_data->description);
     return uw_move(&result);
 }
 
 static void status_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
 {
     _uw_dump_start(fp, self, first_indent);
-    if (self->struct_data) {
+
+    if (self->has_status_data) {
         _uw_dump_struct_data(fp, self);
     }
-    if (self->status_code == UW_ERROR_ERRNO) {
-        fprintf(fp, "\nerrno %d: %s\n", self->uw_errno, strerror(self->uw_errno));
-    } else {
-        UwValue desc = uw_status_desc(self);
-        UW_CSTRING_LOCAL(cdesc, &desc);
-        fprintf(fp, "\n%s (%u): %s\n", uw_status_str(self->status_code), self->status_code, cdesc);
-        if (self->struct_data) {
-            _uw_dump_struct_data(fp, self);
-        }
-    }
+    UwValue desc = uw_status_as_string(self);
+    UW_CSTRING_LOCAL(cdesc, &desc);
+    fputc('\n', fp);
+    fputs(cdesc, fp);
+    fputc('\n', fp);
 }
 
 static bool status_equal_sametype(UwValuePtr self, UwValuePtr other)
@@ -216,9 +291,8 @@ static bool status_equal(UwValuePtr self, UwValuePtr other)
 
 static void status_fini(UwValuePtr self)
 {
-    _UwStatusData* status_data = get_data_ptr(self);
-    if (status_data) {
-        uw_destroy(&status_data->description);
+    if (self->has_status_data) {
+        uw_destroy(&self->status_data->description);
 
         // do not call Struct.fini because it's a no op
     }
@@ -230,7 +304,7 @@ UwType _uw_status_type = {
     .name           = "Status",
     .allocator      = &default_allocator,
     .create         = status_create,
-    .destroy        = _uw_struct_destroy,
+    .destroy        = status_destroy,
     .clone          = _uw_struct_clone,
     .hash           = status_hash,
     .deepcopy       = status_deepcopy,

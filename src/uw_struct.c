@@ -85,17 +85,19 @@ UwResult _uw_struct_deepcopy(UwValuePtr self)
     return UwError(UW_ERROR_NOT_IMPLEMENTED);
 }
 
+void _uw_dump_struct_data(FILE* fp, UwValuePtr value)
+{
+    if (value->struct_data) {
+        fprintf(fp, " data=%p refcount=%u;", value->struct_data, value->struct_data->refcount);
+    } else {
+        fprintf(fp, " data=NULL;");
+    }
+}
+
 static void struct_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
 {
     _uw_dump_start(fp, self, first_indent);
-
-    UwType* type = uw_typeof(self);
-
-    if (type->data_offset || type->data_size) {
-        fprintf(fp, "; data=%p\n", self->struct_data);
-    } else {
-        fputc('\n', fp);
-    }
+    _uw_dump_struct_data(fp, self);
 }
 
 UwResult _uw_struct_to_string(UwValuePtr self)
