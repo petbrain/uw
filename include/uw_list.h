@@ -65,6 +65,8 @@ UwResult _uw_list_append_va(UwValuePtr list, ...);
  * If an error is occured, a Status value is pushed on stack.
  * As long as statuses are prohibited, the function returns the first
  * status encountered and destroys all passed arguments.
+ *
+ * CAVEAT: DO NOT PASS LOCAL VARIABLES BY VALUES!
  */
 
 #define uw_list_append_va(list, ...)  \
@@ -94,25 +96,23 @@ UwResult uw_list_append_ap(UwValuePtr list, va_list ap);
                  char*: _uw_list_insert_u8_wrapper, \
               char8_t*: _uw_list_insert_u8,         \
              char32_t*: _uw_list_insert_u32,        \
-            _UwValue:   _uw_list_insert_v,          \
-            UwValuePtr: _uw_list_insert_p           \
+            UwValuePtr: _uw_list_insert             \
     )((list), (index), (item))
 
-bool _uw_list_insert_v(UwValuePtr list, unsigned index, _UwValue item);
-bool _uw_list_insert_p(UwValuePtr list, unsigned index, UwValuePtr item);
+bool _uw_list_insert(UwValuePtr list, unsigned index, UwValuePtr item);
 /*
  * The basic insert function.
  *
  * `item` is cloned before inserting. CharPtr values are converted to UW strings.
  */
 
-static inline bool _uw_list_insert_null    (UwValuePtr list, unsigned index, UwType_Null     item) { __UWDECL_Null     (v);       return _uw_list_insert_p(list, index, &v); }
-static inline bool _uw_list_insert_bool    (UwValuePtr list, unsigned index, UwType_Bool     item) { __UWDECL_Bool     (v, item); return _uw_list_insert_p(list, index, &v); }
-static inline bool _uw_list_insert_signed  (UwValuePtr list, unsigned index, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_list_insert_p(list, index, &v); }
-static inline bool _uw_list_insert_unsigned(UwValuePtr list, unsigned index, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_list_insert_p(list, index, &v); }
-static inline bool _uw_list_insert_float   (UwValuePtr list, unsigned index, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_list_insert_p(list, index, &v); }
-static inline bool _uw_list_insert_u8      (UwValuePtr list, unsigned index, char8_t*        item) { __UWDECL_Char8Ptr (v, item); return _uw_list_insert_p(list, index, &v); }
-static inline bool _uw_list_insert_u32     (UwValuePtr list, unsigned index, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_list_insert_p(list, index, &v); }
+static inline bool _uw_list_insert_null    (UwValuePtr list, unsigned index, UwType_Null     item) { __UWDECL_Null     (v);       return _uw_list_insert(list, index, &v); }
+static inline bool _uw_list_insert_bool    (UwValuePtr list, unsigned index, UwType_Bool     item) { __UWDECL_Bool     (v, item); return _uw_list_insert(list, index, &v); }
+static inline bool _uw_list_insert_signed  (UwValuePtr list, unsigned index, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_list_insert(list, index, &v); }
+static inline bool _uw_list_insert_unsigned(UwValuePtr list, unsigned index, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_list_insert(list, index, &v); }
+static inline bool _uw_list_insert_float   (UwValuePtr list, unsigned index, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_list_insert(list, index, &v); }
+static inline bool _uw_list_insert_u8      (UwValuePtr list, unsigned index, char8_t*        item) { __UWDECL_Char8Ptr (v, item); return _uw_list_insert(list, index, &v); }
+static inline bool _uw_list_insert_u32     (UwValuePtr list, unsigned index, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_list_insert(list, index, &v); }
 
 static inline bool _uw_list_insert_u8_wrapper(UwValuePtr list, unsigned index, char* item)
 {

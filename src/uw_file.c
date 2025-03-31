@@ -510,21 +510,7 @@ UwResult _uw_file_open(UwValuePtr file_name, int flags, mode_t mode)
  * Path functions, probably should be separated
  */
 
-UwResult _uw_basename_v(_UwValue filename)
-{
-    if (uw_is_charptr(&filename)) {
-        if (!uw_charptr_to_string_inplace(&filename)) {
-            return UwOOM();
-        }
-    } else {
-        uw_expect(string, filename);
-    }
-    UwValue result = _uw_basename_p(&filename);
-    uw_destroy(&filename);
-    return uw_move(&result);
-}
-
-UwResult _uw_basename_p(UwValuePtr filename)
+UwResult uw_basename(UwValuePtr filename)
 {
     UwValue parts = UwNull();
     if (uw_is_charptr(filename)) {
@@ -537,21 +523,7 @@ UwResult _uw_basename_p(UwValuePtr filename)
     return uw_list_item(&parts, -1);
 }
 
-UwResult _uw_dirname_v(_UwValue filename)
-{
-    if (uw_is_charptr(&filename)) {
-        if (!uw_charptr_to_string_inplace(&filename)) {
-            return UwOOM();
-        }
-    } else {
-        uw_expect(string, filename);
-    }
-    UwValue result = _uw_dirname_p(&filename);
-    uw_destroy(&filename);
-    return uw_move(&result);
-}
-
-UwResult _uw_dirname_p(UwValuePtr filename)
+UwResult uw_dirname(UwValuePtr filename)
 {
     UwValue parts = UwNull();
     if (uw_is_charptr(filename)) {

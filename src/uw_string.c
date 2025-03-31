@@ -2384,15 +2384,7 @@ unsigned uw_string_skip_chars(UwValuePtr str, unsigned position, char32_t* skipc
     return length;
 }
 
-UwResult _uw_string_to_int_v(_UwValue str)
-{
-    uw_expect(string, str);
-    UwValue result = _uw_string_to_int_p(&str);
-    uw_destroy(&str);
-    return uw_move(&result);
-}
-
-UwResult _uw_string_to_int_p(UwValuePtr str)
+UwResult uw_string_to_int(UwValuePtr str)
 {
     uw_expect(string, str);
     UW_CSTRING_LOCAL(s, str);
@@ -2409,15 +2401,7 @@ UwResult _uw_string_to_int_p(UwValuePtr str)
     return uw_move(&result);
 }
 
-UwResult _uw_string_to_float_v(_UwValue str)
-{
-    uw_expect(string, str);
-    UwValue result = _uw_string_to_float_p(&str);
-    uw_destroy(&str);
-    return uw_move(&result);
-}
-
-UwResult _uw_string_to_float_p(UwValuePtr str)
+UwResult uw_string_to_float(UwValuePtr str)
 {
     uw_expect(string, str);
     UW_CSTRING_LOCAL(s, str);

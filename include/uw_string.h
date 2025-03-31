@@ -159,9 +159,13 @@ uint8_t u32_char_size(char32_t* str, unsigned max_len);
 #   define uw_char_upper(c)  toupper(c)
 #endif
 
-UwResult _uw_strcat_va_v(...);
-UwResult _uw_strcat_va_p(...);
-
+/*
+ * uw_strcat generic macro allows passing arguments
+ * either by value or by reference.
+ * When passed by value, the function destroys them
+ * .
+ * CAVEAT: DO NOT PASS LOCAL VARIABLES BY VALUES!
+ */
 #define uw_strcat(str, ...) _Generic((str),  \
         _UwValue:   _uw_strcat_va_v,  \
         UwValuePtr: _uw_strcat_va_p   \
@@ -170,6 +174,9 @@ UwResult _uw_strcat_va_p(...);
             _UwValue:   UwVaEnd(),  \
             UwValuePtr: nullptr     \
         ))
+
+UwResult _uw_strcat_va_v(...);
+UwResult _uw_strcat_va_p(...);
 
 UwResult _uw_strcat_ap_v(va_list ap);
 UwResult _uw_strcat_ap_p(va_list ap);
@@ -424,31 +431,10 @@ static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* 
 
 /****************************************************************
  * Conversion functions.
- *
- * Generics allow to pass argument either by value or by reference.
- * When passed by value, the function destroys it.
- * Caveat: do not pass local variables by values,
- *         this form of invocation is only for values returned
- *         by functions, i.e.
- *
- *         uw_string_to_int(uw_map_get(my_map, "num_entities"));
  */
 
-#define uw_string_to_int(str) _Generic((str),  \
-        _UwValue:   _uw_string_to_int_v, \
-        UwValuePtr: _uw_string_to_int_p  \
-    )(str)
-
-UwResult _uw_string_to_int_v(_UwValue str);
-UwResult _uw_string_to_int_p(UwValuePtr str);
-
-#define uw_string_to_float(str) _Generic((str),  \
-        _UwValue:   _uw_string_to_float_v, \
-        UwValuePtr: _uw_string_to_float_p  \
-    )(str)
-
-UwResult _uw_string_to_float_v(_UwValue str);
-UwResult _uw_string_to_float_p(UwValuePtr str);
+UwResult uw_string_to_int(UwValuePtr str);
+UwResult uw_string_to_float(UwValuePtr str);
 
 
 /****************************************************************

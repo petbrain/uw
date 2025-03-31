@@ -380,7 +380,7 @@ failure:
     return uw_move(&error);
 }
 
-bool _uw_list_insert_p(UwValuePtr list, unsigned index, UwValuePtr item)
+bool _uw_list_insert(UwValuePtr list, unsigned index, UwValuePtr item)
 {
     if (uw_is_status(item)) {
         // prohibit appending Status values
@@ -408,17 +408,6 @@ bool _uw_list_insert_p(UwValuePtr list, unsigned index, UwValuePtr item)
     _list->items[index] = uw_move(&v);
     _list->length++;
     return true;
-}
-
-bool _uw_list_insert_v(UwValuePtr list, unsigned index, _UwValue item)
-{
-    if (uw_error(&item)) {
-        uw_destroy(&item);
-        return false;
-    }
-    bool result = _uw_list_insert_p(list, index, &item);
-    uw_destroy(&item);
-    return result;
 }
 
 UwResult uw_list_item(UwValuePtr self, int index)

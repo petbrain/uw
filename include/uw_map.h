@@ -29,6 +29,8 @@ UwResult _uw_map_update_va(UwValuePtr map, ...);
  * If an error is occured, a Status value is pushed on stack.
  * As long as statuses are prohibited, the function returns the first
  * status encountered and destroys all passed arguments.
+ *
+ * CAVEAT: DO NOT PASS LOCAL VARIABLES BY VALUES!
  */
 
 #define uw_map_update_va(map, ...)  \

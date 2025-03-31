@@ -849,10 +849,11 @@ void test_file()
     TEST(uw_equal(&line, c));
 
     { // test path functions
-        UwValue basename = uw_basename(uw_create_string("/bin/bash"));
+        UwValue s = uw_create_string("/bin/bash");
+        UwValue basename = uw_basename(&s);
         //uw_dump(stderr, &basename);
         TEST(uw_equal(&basename, "bash"));
-        UwValue dirname = uw_dirname(uw_create_string("/bin/bash"));
+        UwValue dirname = uw_dirname(&s);
         //uw_dump(stderr, &dirname);
         TEST(uw_equal(&dirname, "/bin"));
         UwValue path = uw_path(UwChar8Ptr(""), UwChar8Ptr("bin"), UwChar8Ptr("bash"));

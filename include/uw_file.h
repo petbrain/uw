@@ -98,21 +98,16 @@ static inline UwResult uw_file_write(UwValuePtr file, void* data, unsigned size,
  * Path functions, probably should be separated
  */
 
-#define uw_basename(filename) _Generic((filename),  \
-        _UwValue:   _uw_basename_v,  \
-        UwValuePtr: _uw_basename_p   \
-    )(filename)
+UwResult uw_basename(UwValuePtr filename);
+UwResult uw_dirname(UwValuePtr filename);
 
-UwResult _uw_basename_v(_UwValue filename);
-UwResult _uw_basename_p(UwValuePtr filename);
-
-#define uw_dirname(filename) _Generic((filename),  \
-        _UwValue:   _uw_dirname_v,  \
-        UwValuePtr: _uw_dirname_p   \
-    )(filename)
-
-UwResult _uw_dirname_v(_UwValue filename);
-UwResult _uw_dirname_p(UwValuePtr filename);
+/*
+ * uw_path generic macro allows passing arguments
+ * either by value or by reference.
+ * When passed by value, the function destroys them
+ * .
+ * CAVEAT: DO NOT PASS LOCAL VARIABLES BY VALUES!
+ */
 
 #define uw_path(part, ...) _Generic((part),  \
         _UwValue:   _uw_path_v,  \
@@ -122,9 +117,6 @@ UwResult _uw_dirname_p(UwValuePtr filename);
             _UwValue:   UwVaEnd(),  \
             UwValuePtr: nullptr     \
         ))
-
-// Note: using UwNull instead of UwVaEnd in uw_path because UwNull is all zeros
-// and can be checked as both pointer and value.
 
 UwResult _uw_path_v(...);
 UwResult _uw_path_p(...);
