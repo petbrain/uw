@@ -644,6 +644,8 @@ void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap);
  * If out of memory assign UW_ERROR_OOM to status.
  */
 
+void uw_print_status(FILE* fp, UwValuePtr status);
+
 /****************************************************************
  * Constructors
  */

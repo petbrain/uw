@@ -168,6 +168,14 @@ void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap)
     free(desc);
 }
 
+void uw_print_status(FILE* fp, UwValuePtr status)
+{
+    UwValue desc = uw_status_as_string(status);
+    UW_CSTRING_LOCAL(desc_cstr, &desc);
+    fputs(desc_cstr, fp);
+    fputc('\n', fp);
+}
+
 /****************************************************************
  * Basic interface methods
  */
