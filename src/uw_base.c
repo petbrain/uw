@@ -831,7 +831,7 @@ static void init_interfaces(UwType* type, va_list ap)
 
 static void update_interfaces(UwType* type, UwType* ancestor, va_list ap)
 {
-    // count interfaces
+    // count new interfaces, starting from existing
     type->num_interfaces = ancestor->num_interfaces;
     va_list temp_ap;
     va_copy(temp_ap, ap);
@@ -857,19 +857,20 @@ static void update_interfaces(UwType* type, UwType* ancestor, va_list ap)
     memcpy(type->interfaces, ancestor->interfaces, ancestor->num_interfaces * sizeof(_UwInterface));
 
     // update interface methods
-    _UwInterface* dest_iface = &type->interfaces[ancestor->num_interfaces];
+    _UwInterface* new_iface = &type->interfaces[ancestor->num_interfaces];
     for (;;) {
         unsigned interface_id = va_arg(ap, unsigned);
         if (((int) interface_id) == -1) {
             break;
         }
-        void** src_methods = _uw_lookup_interface(ancestor->id, interface_id);
-        if (src_methods) {
+        _UwInterface* src_iface = _uw_lookup_interface(ancestor->id, interface_id);
+        if (src_iface) {
             // update existing interface
+            _UwInterface* dest_iface = _uw_lookup_interface(type->id, interface_id);
             void** new_methods = va_arg(ap, void**);
             unsigned num_methods = get_num_interface_methods(interface_id);
             void** interface_methods = alloc_methods(num_methods);
-            memcpy(interface_methods, src_methods, methods_memsize(num_methods));
+            memcpy(interface_methods, src_iface->interface_methods, methods_memsize(num_methods));
 
             for (unsigned i = 0; i < num_methods; i++) {
                 void* meth = new_methods[i];
@@ -877,11 +878,12 @@ static void update_interfaces(UwType* type, UwType* ancestor, va_list ap)
                     interface_methods[i] = meth;
                 }
             }
+            dest_iface->interface_methods = interface_methods;
         } else {
             // add new interface
-            dest_iface->interface_id = interface_id;
-            dest_iface->interface_methods = make_interface_methods(interface_id, va_arg(ap, void**));
-            dest_iface++;
+            new_iface->interface_id = interface_id;
+            new_iface->interface_methods = make_interface_methods(interface_id, va_arg(ap, void**));
+            new_iface++;
         }
     }
 }

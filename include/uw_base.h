@@ -432,7 +432,7 @@ char* uw_get_interface_name(unsigned interface_id);
 [[ noreturn ]]
 void _uw_panic_no_interface(UwTypeId type_id, unsigned interface_id);
 
-static inline void* _uw_lookup_interface(UwTypeId type_id, unsigned interface_id)
+static inline _UwInterface* _uw_lookup_interface(UwTypeId type_id, unsigned interface_id)
 {
     UwType* type = _uw_types[type_id];
     _UwInterface* iface = type->interfaces;
@@ -440,7 +440,7 @@ static inline void* _uw_lookup_interface(UwTypeId type_id, unsigned interface_id
         unsigned i = 0;
         do {
             if (iface->interface_id == interface_id) {
-                return iface->interface_methods;
+                return iface;
             }
             iface++;
             i++;
@@ -451,9 +451,9 @@ static inline void* _uw_lookup_interface(UwTypeId type_id, unsigned interface_id
 
 static inline void* _uw_get_interface(UwTypeId type_id, unsigned interface_id)
 {
-    void* result = _uw_lookup_interface(type_id, interface_id);
+    _UwInterface* result = _uw_lookup_interface(type_id, interface_id);
     if (result) {
-        return result;
+        return result->interface_methods;
     }
     _uw_panic_no_interface(type_id, interface_id);
 }
