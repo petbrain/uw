@@ -532,7 +532,7 @@ static bool map_equal(UwValuePtr self, UwValuePtr other)
 
 UwType _uw_map_type = {
     .id             = UwTypeId_Map,
-    .ancestor_id    = UwTypeId_Null,  // no ancestor
+    .ancestor_id    = UwTypeId_Compound,
     .name           = "Map",
     .allocator      = &default_allocator,
 
