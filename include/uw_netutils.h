@@ -16,11 +16,11 @@ typedef struct {
     struct sockaddr_storage remote_addr;
     PollEventHandlerFunc handler;
     void* data;
-} _UwConnectionData;
+} _UwSocketData;
 
 extern UwTypeId UwTypeId_Connecttion;
 
-#define _uw_connection_data_ptr(value)  ((_UwConnectionData*) _uw_get_data_ptr((value), UwTypeId_Connection))
+#define _uw_socket_data_ptr(value)  ((_UwSocketData*) _uw_get_data_ptr((value), UwTypeId_Socket))
 
 
 extern uint16_t UW_ERROR_BAD_ADDRESS_FAMILY;

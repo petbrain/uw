@@ -83,31 +83,31 @@ UwResult uw_parse_ipv4_subnet(UwValuePtr subnet, UwValuePtr netmask)
 }
 
 /****************************************************************
- * Connection type
+ * Socket type
  */
 
-UwTypeId UwTypeId_Connection = 0;
+UwTypeId UwTypeId_Socket = 0;
 
-static void connection_fini(UwValuePtr self)
+static void socket_fini(UwValuePtr self)
 {
     // do not call Struct.fini because it's a no op
 }
 
-static UwResult connection_init(UwValuePtr self, void* ctor_args)
+static UwResult socket_init(UwValuePtr self, void* ctor_args)
 {
     // call super method, we know the ancestor is Compound
     UwValue status = _uw_types[UwTypeId_Compound]->init(self, ctor_args);
 
     // if we did not knew, then:
-    // UwValue status = uw_ancestor_of(UwTypeId_Connection)->init(self, ctor_args);
+    // UwValue status = uw_ancestor_of(UwTypeId_Socket)->init(self, ctor_args);
 
     if (uw_error(&status)) {
         return uw_move(&status);
     }
 
-    // init connection
+    // init socket
 
-    _UwConnectionData* data = _uw_connection_data_ptr(self);
+    _UwSocketData* data = _uw_socket_data_ptr(self);
     data->sock = -1;
 
     // no need to call super method
@@ -115,9 +115,9 @@ static UwResult connection_init(UwValuePtr self, void* ctor_args)
     return UwOK();
 }
 
-static void connection_hash(UwValuePtr self, UwHashContext* ctx)
+static void socket_hash(UwValuePtr self, UwHashContext* ctx)
 {
-    _UwConnectionData* data = _uw_connection_data_ptr(self);
+    _UwSocketData* data = _uw_socket_data_ptr(self);
 
     _uw_hash_uint64(ctx, self->type_id);
     _uw_hash_uint64(ctx, data->sock);
@@ -125,9 +125,9 @@ static void connection_hash(UwValuePtr self, UwHashContext* ctx)
     _uw_hash_uint64(ctx, (uint64_t) data->data);
 }
 
-static void connection_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
+static void socket_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
 {
-    _UwConnectionData* data = _uw_connection_data_ptr(self);
+    _UwSocketData* data = _uw_socket_data_ptr(self);
 
     _uw_dump_start(fp, self, first_indent);
     _uw_dump_struct_data(fp, self);
@@ -136,42 +136,42 @@ static void connection_dump(UwValuePtr self, FILE* fp, int first_indent, int nex
             data->sock, data->handler, data->data);
 }
 
-static bool connection_equal_sametype(UwValuePtr self, UwValuePtr other)
+static bool socket_equal_sametype(UwValuePtr self, UwValuePtr other)
 {
     return false;
 }
 
-static bool connection_equal(UwValuePtr self, UwValuePtr other)
+static bool socket_equal(UwValuePtr self, UwValuePtr other)
 {
     return false;
 }
 
-static UwType connection_type = {
+static UwType socket_type = {
     .id             = 0,
     .ancestor_id    = UwTypeId_Struct,
-    .name           = "Connection",
+    .name           = "Socket",
     .allocator      = &default_allocator,
 
     .create         = _uw_struct_create,
     .destroy        = _uw_struct_destroy,
     .clone          = _uw_struct_clone,
-    .hash           = connection_hash,
+    .hash           = socket_hash,
     .deepcopy       = _uw_struct_deepcopy,
-    .dump           = connection_dump,
+    .dump           = socket_dump,
     .to_string      = _uw_struct_to_string,
     .is_true        = _uw_struct_is_true,
-    .equal_sametype = connection_equal_sametype,
-    .equal          = connection_equal,
+    .equal_sametype = socket_equal_sametype,
+    .equal          = socket_equal,
 
     .data_offset    = sizeof(_UwStructData),
-    .data_size      = sizeof(_UwConnectionData),
+    .data_size      = sizeof(_UwSocketData),
 
-    .init           = connection_init,
-    .fini           = connection_fini
+    .init           = socket_init,
+    .fini           = socket_fini
 };
 
 // make sure _UwStructData has correct padding
-static_assert((sizeof(_UwStructData) & (alignof(_UwConnectionData) - 1)) == 0);
+static_assert((sizeof(_UwStructData) & (alignof(_UwSocketData) - 1)) == 0);
 
 /****************************************************************
  * Initialization
@@ -186,6 +186,6 @@ static void init_netutils()
     UW_ERROR_MISSING_NETMASK    = uw_define_status("MISSING_NETMASK");
     UW_ERROR_BAD_NETMASK        = uw_define_status("BAD_NETMASK");
 
-    // init connection type
-    UwTypeId_Connection = uw_add_type(&connection_type);
+    // init socket type
+    UwTypeId_Socket = uw_add_type(&socket_type);
 }
