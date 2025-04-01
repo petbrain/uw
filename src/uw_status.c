@@ -134,6 +134,16 @@ static void status_destroy(UwValuePtr self)
     }
 }
 
+static UwResult status_clone(UwValuePtr self)
+{
+    if (self->has_status_data) {
+        // call super method
+        return _uw_types[UwTypeId_Struct]->clone(self);
+    } else {
+        return *self;
+    }
+}
+
 static void status_hash(UwValuePtr self, UwHashContext* ctx)
 {
     _uw_hash_uint64(ctx, self->type_id);
@@ -281,7 +291,7 @@ UwType _uw_status_type = {
     .allocator      = &default_allocator,
     .create         = status_create,
     .destroy        = status_destroy,
-    .clone          = _uw_struct_clone,
+    .clone          = status_clone,
     .hash           = status_hash,
     .deepcopy       = status_deepcopy,
     .dump           = status_dump,
