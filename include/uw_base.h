@@ -634,11 +634,6 @@ static inline bool uw_va_end(UwValuePtr status)
     return status->status_code == UW_STATUS_VA_END;
 }
 
-UwResult uw_status_as_string(UwValuePtr status);
-/*
- * Get status description.
- */
-
 void _uw_set_status_desc(UwValuePtr status, char* fmt, ...);
 void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap);
 /*

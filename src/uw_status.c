@@ -71,68 +71,6 @@ char* uw_status_str(uint16_t status_code)
     }
 }
 
-UwResult uw_status_as_string(UwValuePtr status)
-{
-    if (!status) {
-        return UwString_1_12(6, '(', 'n', 'u', 'l', 'l', ')', 0, 0, 0, 0, 0, 0);
-    }
-    if (!uw_is_status(status)) {
-        return UwString_1_12(12, '(', 'n', 'o', 't', ' ', 's', 't', 'a', 't', 'u', 's', ')');
-    }
-    if (!status->is_error) {
-        return UwString_1_12(2, 'O', 'K', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-    char* status_str = uw_status_str(status->status_code);
-    char* file_name;
-    unsigned line_number;
-    unsigned description_length = 0;
-    uint8_t char_size = 1;
-
-    if (status->has_status_data) {
-        file_name = status->status_data->file_name;
-        line_number = status->status_data->line_number;
-        UwValuePtr desc = &status->status_data->description;
-        if (uw_is_string(desc)) {
-            description_length = uw_strlen(desc);
-            char_size = uw_string_char_size(desc);
-        }
-    } else {
-        file_name = status->file_name;
-        line_number = status->line_number;
-    }
-
-    unsigned errno_length = 0;
-    static char errno_fmt[] = "; errno %d: %s";
-    char* errno_str = "";
-    if (status->status_code == UW_ERROR_ERRNO) {
-        errno_str = strerror(status->uw_errno);
-    }
-    char errno_desc[strlen(errno_fmt) + 16 + strlen(errno_str)];
-    if (status->status_code == UW_ERROR_ERRNO) {
-        errno_length = snprintf(errno_desc, sizeof(errno_desc), errno_fmt, status->uw_errno, errno_str);
-    } else {
-        errno_desc[0] = 0;
-    }
-
-    static char fmt[] = "%s; %s:%u%s";
-    char desc[strlen(fmt) + 16 + strlen(status_str) + strlen(file_name) + errno_length];
-    unsigned length = snprintf(desc, sizeof(desc), fmt, status_str, file_name, line_number, errno_desc);
-
-    UwValue result = uw_create_empty_string(length + description_length + 2, char_size);
-    if (uw_error(&result)) {
-        goto error;
-    }
-    uw_string_append(&result, desc);
-    if (description_length) {
-        uw_string_append(&result, "; ");
-        uw_string_append(&result, &status->status_data->description);
-    }
-    return uw_move(&result);
-
-error:
-    return UwString_1_12(7, '(', 'e', 'r', 'r', 'o', 'r', ')', 0, 0, 0, 0, 0);
-}
-
 void _uw_set_status_desc(UwValuePtr status, char* fmt, ...)
 {
     va_list ap;
@@ -170,7 +108,7 @@ void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap)
 
 void uw_print_status(FILE* fp, UwValuePtr status)
 {
-    UwValue desc = uw_status_as_string(status);
+    UwValue desc = uw_typeof(status)->to_string(status);
     UW_CSTRING_LOCAL(desc_cstr, &desc);
     fputs(desc_cstr, fp);
     fputc('\n', fp);
@@ -232,11 +170,73 @@ static void status_dump(UwValuePtr self, FILE* fp, int first_indent, int next_in
     if (self->has_status_data) {
         _uw_dump_struct_data(fp, self);
     }
-    UwValue desc = uw_status_as_string(self);
+    UwValue desc = _uw_types[UwTypeId_Status]->to_string(self);
     UW_CSTRING_LOCAL(cdesc, &desc);
     fputc('\n', fp);
     fputs(cdesc, fp);
     fputc('\n', fp);
+}
+
+static UwResult status_to_string(UwValuePtr status)
+{
+    if (!status) {
+        return UwString_1_12(6, '(', 'n', 'u', 'l', 'l', ')', 0, 0, 0, 0, 0, 0);
+    }
+    if (!uw_is_status(status)) {
+        return UwString_1_12(12, '(', 'n', 'o', 't', ' ', 's', 't', 'a', 't', 'u', 's', ')');
+    }
+    if (!status->is_error) {
+        return UwString_1_12(2, 'O', 'K', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+    char* status_str = uw_status_str(status->status_code);
+    char* file_name;
+    unsigned line_number;
+    unsigned description_length = 0;
+    uint8_t char_size = 1;
+
+    if (status->has_status_data) {
+        file_name = status->status_data->file_name;
+        line_number = status->status_data->line_number;
+        UwValuePtr desc = &status->status_data->description;
+        if (uw_is_string(desc)) {
+            description_length = uw_strlen(desc);
+            char_size = uw_string_char_size(desc);
+        }
+    } else {
+        file_name = status->file_name;
+        line_number = status->line_number;
+    }
+
+    unsigned errno_length = 0;
+    static char errno_fmt[] = "; errno %d: %s";
+    char* errno_str = "";
+    if (status->status_code == UW_ERROR_ERRNO) {
+        errno_str = strerror(status->uw_errno);
+    }
+    char errno_desc[strlen(errno_fmt) + 16 + strlen(errno_str)];
+    if (status->status_code == UW_ERROR_ERRNO) {
+        errno_length = snprintf(errno_desc, sizeof(errno_desc), errno_fmt, status->uw_errno, errno_str);
+    } else {
+        errno_desc[0] = 0;
+    }
+
+    static char fmt[] = "%s; %s:%u%s";
+    char desc[strlen(fmt) + 16 + strlen(status_str) + strlen(file_name) + errno_length];
+    unsigned length = snprintf(desc, sizeof(desc), fmt, status_str, file_name, line_number, errno_desc);
+
+    UwValue result = uw_create_empty_string(length + description_length + 2, char_size);
+    if (uw_error(&result)) {
+        goto error;
+    }
+    uw_string_append(&result, desc);
+    if (description_length) {
+        uw_string_append(&result, "; ");
+        uw_string_append(&result, &status->status_data->description);
+    }
+    return uw_move(&result);
+
+error:
+    return UwString_1_12(7, '(', 'e', 'r', 'r', 'o', 'r', ')', 0, 0, 0, 0, 0);
 }
 
 static bool status_equal_sametype(UwValuePtr self, UwValuePtr other)
@@ -285,7 +285,7 @@ UwType _uw_status_type = {
     .hash           = status_hash,
     .deepcopy       = status_deepcopy,
     .dump           = status_dump,
-    .to_string      = _uw_struct_to_string,
+    .to_string      = status_to_string,
     .is_true        = _uw_struct_is_true,
     .equal_sametype = status_equal_sametype,
     .equal          = status_equal,
