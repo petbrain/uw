@@ -340,7 +340,7 @@ static void map_fini(UwValuePtr self)
     _uw_types[UwTypeId_Compound]->fini(self);
 
     // if we did not knew, then:
-    // uw_ancestor_of(UwTypeId_Map)self);
+    // uw_ancestor_of(UwTypeId_Map)->fini(self);
 }
 
 static UwResult map_init(UwValuePtr self, void* ctor_args)
