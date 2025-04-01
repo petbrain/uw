@@ -71,6 +71,17 @@ char* uw_status_str(uint16_t status_code)
     }
 }
 
+void _uw_set_status_location(UwValuePtr status, char* file_name, unsigned line_number)
+{
+    if (status->has_status_data) {
+        status->status_data->file_name = file_name;
+        status->status_data->line_number = line_number;
+    } else {
+        status->file_name = file_name;
+        status->line_number = line_number;
+    }
+}
+
 void _uw_set_status_desc(UwValuePtr status, char* fmt, ...)
 {
     va_list ap;

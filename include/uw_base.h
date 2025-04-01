@@ -634,6 +634,7 @@ static inline bool uw_va_end(UwValuePtr status)
     return status->status_code == UW_STATUS_VA_END;
 }
 
+void _uw_set_status_location(UwValuePtr status, char* file_name, unsigned line_number);
 void _uw_set_status_desc(UwValuePtr status, char* fmt, ...);
 void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap);
 /*
