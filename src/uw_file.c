@@ -37,7 +37,11 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line);
 
 static UwResult file_init(UwValuePtr self, void* ctor_args)
 {
-    // call super method
+    // call super method, we know the ancestor is Struct
+    _uw_types[UwTypeId_Struct]->init(self, ctor_args);
+
+    // if we did not knew, then:
+    // uw_ancestor_of(UwTypeId_File)->init(self, ctor_args);
 
     _UwFile* f = get_data_ptr(self);
     f->fd = -1;
@@ -50,7 +54,7 @@ static void file_fini(UwValuePtr self)
 {
     file_close(self);
 
-    // call super method
+    // do not call Struct.fini because it's a no op
 }
 
 static void file_hash(UwValuePtr self, UwHashContext* ctx)
