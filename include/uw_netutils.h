@@ -1,32 +1,18 @@
 #pragma once
 
-#include <sys/socket.h>
-
 #include <uw.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef void (*PollEventHandlerFunc)(int sock, uint32_t epoll_events, void* data);
-
-typedef struct {
-    int sock;
-    struct sockaddr_storage local_addr;
-    struct sockaddr_storage remote_addr;
-    PollEventHandlerFunc handler;
-    void* data;
-} _UwSocketData;
-
-extern UwTypeId UwTypeId_Connecttion;
-
-#define _uw_socket_data_ptr(value)  ((_UwSocketData*) _uw_get_data_ptr((value), UwTypeId_Socket))
-
 
 extern uint16_t UW_ERROR_BAD_ADDRESS_FAMILY;
 extern uint16_t UW_ERROR_BAD_IP_ADDRESS;
 extern uint16_t UW_ERROR_MISSING_NETMASK;
 extern uint16_t UW_ERROR_BAD_NETMASK;
+extern uint16_t UW_ERROR_PORT_UNSPECIFIED;
+
 
 UwResult uw_parse_ipv4_address(UwValuePtr addr);
 /*
@@ -74,6 +60,14 @@ static inline uint32_t uw_ipv4_netmask(UwValuePtr subnet)
 {
     return ((IPv4subnet*) &subnet->unsigned_value)->netmask;
 }
+
+UwResult uw_split_addr_port(UwValuePtr addr_port);
+/*
+ * Split address and port separated by colon.
+ * Return list containing exactly two items.
+ * Both parts can be empty string.
+ * Port can be a service name, understood by getaddrinfo.
+ */
 
 #ifdef __cplusplus
 }

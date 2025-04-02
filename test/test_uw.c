@@ -996,6 +996,40 @@ void test_netutils()
         TEST(parsed_subnet.status_code == UW_ERROR_BAD_NETMASK);
         //uw_dump(stderr, &parsed_subnet);
     }
+
+    // uw_split_addr_port
+    {
+        UwValue addr_port = uw_create_string("example.com:80");
+        UwValue parts = uw_split_addr_port(&addr_port);
+        UwValue addr = uw_list_item(&parts, 0);
+        UwValue port = uw_list_item(&parts, 1);
+        TEST(uw_equal(&addr, "example.com"));
+        TEST(uw_equal(&port, "80"));
+    }
+    {
+        UwValue addr_port = uw_create_string("80");
+        UwValue parts = uw_split_addr_port(&addr_port);
+        UwValue addr = uw_list_item(&parts, 0);
+        UwValue port = uw_list_item(&parts, 1);
+        TEST(uw_equal(&addr, ""));
+        TEST(uw_equal(&port, "80"));
+    }
+    {
+        UwValue addr_port = uw_create_string("::1");
+        UwValue parts = uw_split_addr_port(&addr_port);
+        UwValue addr = uw_list_item(&parts, 0);
+        UwValue port = uw_list_item(&parts, 1);
+        TEST(uw_equal(&addr, "::1"));
+        TEST(uw_equal(&port, ""));
+    }
+    {
+        UwValue addr_port = uw_create_string("[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443");
+        UwValue parts = uw_split_addr_port(&addr_port);
+        UwValue addr = uw_list_item(&parts, 0);
+        UwValue port = uw_list_item(&parts, 1);
+        TEST(uw_equal(&addr, "[2001:db8:85a3:8d3:1319:8a2e:370:7348]"));
+        TEST(uw_equal(&port, "443"));
+    }
 }
 
 void test_args()
