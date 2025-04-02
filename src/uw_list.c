@@ -462,6 +462,12 @@ void uw_list_del(UwValuePtr self, unsigned start_index, unsigned end_index)
     _uw_list_del(get_data_ptr(self), start_index, end_index);
 }
 
+void uw_list_clean(UwValuePtr self)
+{
+    uw_assert_list(self);
+    _uw_list_del(get_data_ptr(self), 0, UINT_MAX);
+}
+
 void _uw_list_del(_UwList* list, unsigned start_index, unsigned end_index)
 {
     if (list->length == 0) {

@@ -177,6 +177,11 @@ void uw_list_del(UwValuePtr list, unsigned start_index, unsigned end_index);
  * `end_index` is exclusive, i.e. the number of items to delete equals to end_index - start_index..
  */
 
+void uw_list_clean(UwValuePtr list);
+/*
+ * Delete all items from list.
+ */
+
 UwResult uw_list_slice(UwValuePtr list, unsigned start_index, unsigned end_index);
 /*
  * Return shallow copy of the given range of list.
