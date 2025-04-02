@@ -25,8 +25,8 @@ UwResult uw_parse_kvargs(int argc, char* argv[])
         UwValue kv = uw_string_split_chr(&arg, '=', 1);
         uw_return_if_error(&kv);
 
-        UwValue key = uw_list_item(&kv, 0);
-        if (uw_list_length(&kv) == 1) {
+        UwValue key = uw_array_item(&kv, 0);
+        if (uw_array_length(&kv) == 1) {
             // `=` is missing, value is null
             UwValue null = UwNull();
             if (!uw_map_update(&kwargs, &key, &null)) {
@@ -34,7 +34,7 @@ UwResult uw_parse_kvargs(int argc, char* argv[])
             }
         } else {
             // add key-value, overwriting previous one
-            UwValue value = uw_list_item(&kv, 1);
+            UwValue value = uw_array_item(&kv, 1);
             if (!uw_map_update(&kwargs, &key, &value)) {
                 return UwOOM();
             }

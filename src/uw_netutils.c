@@ -38,10 +38,10 @@ UwResult uw_parse_ipv4_subnet(UwValuePtr subnet, UwValuePtr netmask)
     UwValue parts = uw_string_split_chr(subnet, '/', 0);
     uw_return_if_error(&parts);
 
-    unsigned num_parts = uw_list_length(&parts);
+    unsigned num_parts = uw_array_length(&parts);
     if (num_parts > 1) {
         // try CIDR netmask
-        UwValue cidr_netmask = uw_list_item(&parts, 1);
+        UwValue cidr_netmask = uw_array_item(&parts, 1);
         uw_return_if_error(&cidr_netmask);
 
         UW_CSTRING_LOCAL(c_netmask, &cidr_netmask);
@@ -67,7 +67,7 @@ UwResult uw_parse_ipv4_subnet(UwValuePtr subnet, UwValuePtr netmask)
     }
 
     // parse subnet address
-    UwValue addr = uw_list_item(&parts, 0);
+    UwValue addr = uw_array_item(&parts, 0);
     uw_return_if_error(&addr);
 
     UwValue parsed_subnet = uw_parse_ipv4_address(&addr);
@@ -84,15 +84,15 @@ UwResult uw_split_addr_port(UwValuePtr addr_port)
     UwValue parts = uw_string_rsplit_chr(addr_port, ':', 1);
     uw_return_if_error(&parts);
 
-    if (uw_list_length(&parts) == 1) {
+    if (uw_array_length(&parts) == 1) {
         // Assume addr_port contains port (or service name) only.
         // Insert empty string for address part.
-        if (!uw_list_insert(&parts, 0, &emptystr)) {
+        if (!uw_array_insert(&parts, 0, &emptystr)) {
             return UwOOM();
         }
     } else {
-        UwValue addr = uw_list_item(&parts, 0);
-        UwValue port = uw_list_item(&parts, 1);
+        UwValue addr = uw_array_item(&parts, 0);
+        UwValue port = uw_array_item(&parts, 1);
 
         uw_return_if_error(&addr);
         uw_return_if_error(&port);
@@ -103,11 +103,11 @@ UwResult uw_split_addr_port(UwValuePtr addr_port)
                 // all right
             } else {
                 // port is missing
-                uw_list_clean(&parts);
-                if (!uw_list_append(&parts, addr_port)) {
+                uw_array_clean(&parts);
+                if (!uw_array_append(&parts, addr_port)) {
                     return UwOOM();
                 }
-                if (!uw_list_append(&parts, &emptystr)) {
+                if (!uw_array_append(&parts, &emptystr)) {
                     return UwOOM();
                 }
             }

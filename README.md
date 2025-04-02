@@ -38,8 +38,8 @@ Sorry, msvc users.
 Note, if `UwValue` is used in a loop body, always use nested scope (double curly brackets)
 to run destructors on each iteration:
 ```c
-for (unsigned i = 0, n = uw_list_length(mylist); i < n; i++) {{
-    UwValue value = uw_list_item(mylist, i);
+for (unsigned i = 0, n = uw_array_length(my_array); i < n; i++) {{
+    UwValue value = uw_array_item(my_array, i);
 
     // process item
 
@@ -64,7 +64,7 @@ UwResult foo()
 Values are passed to functions by reference to make things a bit more efficient.
 Functions do not and should not modify arguments, they treat them as immutable.
 
-There are a few exceptions that accept UW values by value: `UwList()`, `UwMap()`,
+There are a few exceptions that accept UW values by value: `UwArray()`, `UwMap()`,
 `uw_strcat()`, and `uw_path()`. All they are variadic functions, and they destroy
 their arguments upon return. This is convenient to construct objects
 using function calls only, i.e.
@@ -105,7 +105,7 @@ UwNull UwBool UwInt UwFloat UwPtr UwCharPtr UwString UwStruct
                                                               |
                                                        +------+
                                                        |      |
-                                                    UwList  UwMap
+                                                    UwArray  UwMap
 ```
 
 Integral types `UwNull`, `UwBool`, `UwInt`, `UwFloat`, `UwPtr`, and `UwCharPtr`
@@ -119,7 +119,7 @@ length of English word.
 
 `UwCharPtr` facilitates work with C strings.
 Its `clone` method converts C strings to `UwString` and other types, such as
-list and map, take advantage of that:
+array and map, take advantage of that:
 ```c
 UwValue my_map = UwMap(
     UwChar8Ptr(u8"สวัสดี"), UwChar32Ptr(U"สบาย"),
@@ -135,12 +135,12 @@ is optional for `Status`.
 The data attached to `Struct` may contain UW values, but it does not handle
 circular references which may cause memory leak.
 
-`Compound` type handles circular references. It's the base type for `UwList`
+`Compound` type handles circular references. It's the base type for `UwArray`
 and `UwMap` which may contain any items, including self.
 No garbage collection is necessary.
 
 `Status` type is used to check returned UW values for errors.
-Because of this special purpose, `Status` values can't be added to lists
+Because of this special purpose, `Status` values can't be added to arrays
 and used in maps.
 
 ## Interfaces

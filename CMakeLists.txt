@@ -16,12 +16,12 @@ find_package(ICU COMPONENTS uc)
 
 add_library(uw STATIC
     src/uw_args.c
+    src/uw_array.c
     src/uw_base.c
     src/uw_charptr.c
     src/uw_compound.c
     src/uw_file.c
     src/uw_hash.c
-    src/uw_list.c
     src/uw_map.c
     src/uw_netutils.c
     src/uw_status.c

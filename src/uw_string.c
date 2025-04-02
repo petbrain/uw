@@ -2004,7 +2004,7 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
     unsigned len = _uw_string_length(str);
     uint8_t char_size = _uw_string_char_size(str);
 
-    UwValue result = UwList();
+    UwValue result = UwArray();
     uw_return_if_error(&result);
 
     char8_t* ptr = _uw_string_char_ptr(str, 0);
@@ -2025,7 +2025,7 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
                 strmeth->copy_to(start, &substr, 0, substr_len);
                 _uw_string_set_length(&substr, substr_len);
             }
-            if (!uw_list_append(&result, &substr)) {
+            if (!uw_array_append(&result, &substr)) {
                 return UwOOM();
             }
 
@@ -2058,7 +2058,7 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
             strmeth->copy_to(start, &substr, 0, substr_len);
             _uw_string_set_length(&substr, substr_len);
         }
-        if (!uw_list_append(&result, &substr)) {
+        if (!uw_array_append(&result, &substr)) {
             return UwOOM();
         }
     }
@@ -2073,7 +2073,7 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
     unsigned len = _uw_string_length(str);
     uint8_t char_size = _uw_string_char_size(str);
 
-    UwValue result = UwList();
+    UwValue result = UwArray();
     if (uw_error(&result) || len == 0) {
         return uw_move(&result);
     }
@@ -2095,7 +2095,7 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
                 strmeth->copy_to(start + char_size, &substr, 0, substr_len);
                 _uw_string_set_length(&substr, substr_len);
             }
-            if (!uw_list_insert(&result, 0, &substr)) {
+            if (!uw_array_insert(&result, 0, &substr)) {
                 return UwOOM();
             }
 
@@ -2128,7 +2128,7 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
             strmeth->copy_to(start, &substr, 0, substr_len);
             _uw_string_set_length(&substr, substr_len);
         }
-        if (!uw_list_insert(&result, 0, &substr)) {
+        if (!uw_array_insert(&result, 0, &substr)) {
             return UwOOM();
         }
     }

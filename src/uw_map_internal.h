@@ -4,7 +4,7 @@
  * Map internals.
  */
 
-#include "src/uw_list_internal.h"
+#include "src/uw_array_internal.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +29,7 @@ struct _UwHashTable {
 };
 
 typedef struct {
-    _UwList kv_pairs;        // key-value pairs in the insertion order
+    _UwArray kv_pairs;        // key-value pairs in the insertion order
     struct _UwHashTable hash_table;
 } _UwMap;
 

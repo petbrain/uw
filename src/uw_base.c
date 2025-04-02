@@ -9,7 +9,7 @@
 #include "include/uw_string.h"
 #include "src/uw_charptr_internal.h"
 #include "src/uw_hash_internal.h"
-#include "src/uw_list_internal.h"
+#include "src/uw_array_internal.h"
 #include "src/uw_map_internal.h"
 #include "src/uw_string_internal.h"
 
@@ -668,7 +668,7 @@ static UwType* basic_types[] = {
     [UwTypeId_Struct]   = &_uw_struct_type,
     [UwTypeId_Compound] = &_uw_compound_type,
     [UwTypeId_Status]   = &_uw_status_type,
-    [UwTypeId_List]     = &_uw_list_type,
+    [UwTypeId_Array]    = &_uw_array_type,
     [UwTypeId_Map]      = &_uw_map_type
 };
 

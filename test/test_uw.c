@@ -625,21 +625,21 @@ void test_string()
 
     { // test split/join
         UwValue str = uw_create_string(U"สบาย/สบาย/yo/yo");
-        UwValue list = uw_string_split_chr(&str, '/', 0);
-        //uw_dump(stderr, &list);
-        UwValue list2 = uw_string_rsplit_chr(&str, '/', 1);
-        //uw_dump(stderr, &list2);
-        UwValue first = uw_list_item(&list2, 0);
-        UwValue last = uw_list_item(&list2, 1);
+        UwValue array = uw_string_split_chr(&str, '/', 0);
+        //uw_dump(stderr, &array);
+        UwValue array2 = uw_string_rsplit_chr(&str, '/', 1);
+        //uw_dump(stderr, &array2);
+        UwValue first = uw_array_item(&array2, 0);
+        UwValue last = uw_array_item(&array2, 1);
         TEST(uw_equal(&first, U"สบาย/สบาย/yo"));
         TEST(uw_equal(&last, "yo"));
-        UwValue list3 = uw_string_split_chr(&str, '/', 1);
-        //uw_dump(stderr, &list3);
-        UwValue first3 = uw_list_item(&list3, 0);
-        UwValue last3 = uw_list_item(&list3, 1);
+        UwValue array3 = uw_string_split_chr(&str, '/', 1);
+        //uw_dump(stderr, &array3);
+        UwValue first3 = uw_array_item(&array3, 0);
+        UwValue last3 = uw_array_item(&array3, 1);
         TEST(uw_equal(&first3, U"สบาย"));
         TEST(uw_equal(&last3, U"สบาย/yo/yo"));
-        UwValue v = uw_list_join('/', &list);
+        UwValue v = uw_array_join('/', &array);
         TEST(uw_equal(&v, U"สบาย/สบาย/yo/yo"));
     }
 
@@ -657,101 +657,101 @@ void test_string()
     }
 }
 
-void test_list()
+void test_array()
 {
-    UwValue list = UwList();
+    UwValue array = UwArray();
 
-    TEST(uw_list_length(&list) == 0);
+    TEST(uw_array_length(&array) == 0);
 
     for(unsigned i = 0; i < 1000; i++) {
         {
             UwValue item = UwUnsigned(i);
-            uw_list_append(&list, &item);
+            uw_array_append(&array, &item);
         }
 
-        TEST(uw_list_length(&list) == i + 1);
+        TEST(uw_array_length(&array) == i + 1);
 
         {
-            UwValue v = uw_list_item(&list, i);
+            UwValue v = uw_array_item(&array, i);
             UwValue item = UwUnsigned(i);
             TEST(uw_equal(&v, &item));
         }
     }
 
     {
-        UwValue item = uw_list_item(&list, -2);
+        UwValue item = uw_array_item(&array, -2);
         UwValue v = UwUnsigned(998);
         TEST(uw_equal(&v, &item));
     }
 
-    uw_list_del(&list, 100, 200);
-    TEST(uw_list_length(&list) == 900);
+    uw_array_del(&array, 100, 200);
+    TEST(uw_array_length(&array) == 900);
 
     {
-        UwValue item = uw_list_item(&list, 99);
+        UwValue item = uw_array_item(&array, 99);
         UwValue v = UwUnsigned(99);
         TEST(uw_equal(&v, &item));
     }
     {
-        UwValue item = uw_list_item(&list, 100);
+        UwValue item = uw_array_item(&array, 100);
         UwValue v = UwUnsigned(200);
         TEST(uw_equal(&v, &item));
     }
 
     {
-        UwValue slice = uw_list_slice(&list, 750, 850);
-        TEST(uw_list_length(&slice) == 100);
+        UwValue slice = uw_array_slice(&array, 750, 850);
+        TEST(uw_array_length(&slice) == 100);
         {
-            UwValue item = uw_list_item(&slice, 1);
+            UwValue item = uw_array_item(&slice, 1);
             TEST(uw_equal(&item, 851));
         }
         {
-            UwValue item = uw_list_item(&slice, 98);
+            UwValue item = uw_array_item(&slice, 98);
             TEST(uw_equal(&item, 948));
         }
     }
 
-    UwValue pulled = uw_list_pull(&list);
+    UwValue pulled = uw_array_pull(&array);
     TEST(uw_equal(&pulled, 0));
-    TEST(uw_list_length(&list) == 899);
-    pulled = uw_list_pull(&list);
+    TEST(uw_array_length(&array) == 899);
+    pulled = uw_array_pull(&array);
     TEST(uw_equal(&pulled, 1));
-    TEST(uw_list_length(&list) == 898);
+    TEST(uw_array_length(&array) == 898);
 
     { // test join
-        UwValue list = UwList();
-        uw_list_append(&list, "Hello");
-        uw_list_append(&list, u8"สวัสดี");
-        uw_list_append(&list, "Thanks");
-        uw_list_append(&list, U"mulțumesc");
-        UwValue v = uw_list_join('/', &list);
+        UwValue array = UwArray();
+        uw_array_append(&array, "Hello");
+        uw_array_append(&array, u8"สวัสดี");
+        uw_array_append(&array, "Thanks");
+        uw_array_append(&array, U"mulțumesc");
+        UwValue v = uw_array_join('/', &array);
         TEST(uw_equal(&v, U"Hello/สวัสดี/Thanks/mulțumesc"));
         //uw_dump(stderr, &v);
     }
 
     { // test join with CharPtr
-        UwValue list       = UwList();
+        UwValue array       = UwArray();
         UwValue sawatdee   = UwChar8Ptr(u8"สวัสดี");
         UwValue thanks     = UwCharPtr("Thanks");
         UwValue multsumesc = UwChar32Ptr(U"mulțumesc");
         UwValue wat        = UwChar32Ptr(U"🙏");
-        uw_list_append(&list, "Hello");
-        uw_list_append(&list, &sawatdee);
-        uw_list_append(&list, &thanks);
-        uw_list_append(&list, &multsumesc);
-        UwValue v = uw_list_join(&wat, &list);
+        uw_array_append(&array, "Hello");
+        uw_array_append(&array, &sawatdee);
+        uw_array_append(&array, &thanks);
+        uw_array_append(&array, &multsumesc);
+        UwValue v = uw_array_join(&wat, &array);
         TEST(uw_equal(&v, U"Hello🙏สวัสดี🙏Thanks🙏mulțumesc"));
         //uw_dump(stderr, &v);
     }
 
     { // test dedent
-        UwValue list = UwList(
+        UwValue array = UwArray(
             UwCharPtr("   first line"),
             UwCharPtr("  second line"),
             UwCharPtr("    third line")
         );
-        uw_list_dedent(&list);
-        UwValue v = uw_list_join(',', &list);
+        uw_array_dedent(&array);
+        UwValue v = uw_array_join(',', &array);
         TEST(uw_equal(&v, " first line,second line,  third line"));
         //uw_dump(stderr, &v);
     }
@@ -1009,32 +1009,32 @@ void test_netutils()
     {
         UwValue addr_port = uw_create_string("example.com:80");
         UwValue parts = uw_split_addr_port(&addr_port);
-        UwValue addr = uw_list_item(&parts, 0);
-        UwValue port = uw_list_item(&parts, 1);
+        UwValue addr = uw_array_item(&parts, 0);
+        UwValue port = uw_array_item(&parts, 1);
         TEST(uw_equal(&addr, "example.com"));
         TEST(uw_equal(&port, "80"));
     }
     {
         UwValue addr_port = uw_create_string("80");
         UwValue parts = uw_split_addr_port(&addr_port);
-        UwValue addr = uw_list_item(&parts, 0);
-        UwValue port = uw_list_item(&parts, 1);
+        UwValue addr = uw_array_item(&parts, 0);
+        UwValue port = uw_array_item(&parts, 1);
         TEST(uw_equal(&addr, ""));
         TEST(uw_equal(&port, "80"));
     }
     {
         UwValue addr_port = uw_create_string("::1");
         UwValue parts = uw_split_addr_port(&addr_port);
-        UwValue addr = uw_list_item(&parts, 0);
-        UwValue port = uw_list_item(&parts, 1);
+        UwValue addr = uw_array_item(&parts, 0);
+        UwValue port = uw_array_item(&parts, 1);
         TEST(uw_equal(&addr, "::1"));
         TEST(uw_equal(&port, ""));
     }
     {
         UwValue addr_port = uw_create_string("[2001:db8:85a3:8d3:1319:8a2e:370:7348]:443");
         UwValue parts = uw_split_addr_port(&addr_port);
-        UwValue addr = uw_list_item(&parts, 0);
-        UwValue port = uw_list_item(&parts, 1);
+        UwValue addr = uw_array_item(&parts, 0);
+        UwValue port = uw_array_item(&parts, 1);
         TEST(uw_equal(&addr, "[2001:db8:85a3:8d3:1319:8a2e:370:7348]"));
         TEST(uw_equal(&port, "443"));
     }
@@ -1099,7 +1099,7 @@ int main(int argc, char* argv[])
     test_icu();
     test_integral_types();
     test_string();
-    test_list();
+    test_array();
     test_map();
     test_file();
     test_string_io();

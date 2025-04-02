@@ -386,7 +386,7 @@ static inline bool _uw_endswith_u8_wrapper(UwValuePtr str, char* suffix)
 
 /****************************************************************
  * Split functions.
- * Return list of strings.
+ * Return array of strings.
  * maxsplit == 0 imposes no limit
  */
 

@@ -64,7 +64,7 @@ static inline uint32_t uw_ipv4_netmask(UwValuePtr subnet)
 UwResult uw_split_addr_port(UwValuePtr addr_port);
 /*
  * Split address and port separated by colon.
- * Return list containing exactly two items.
+ * Return array containing exactly two items.
  * Both parts can be empty string.
  * Port can be a service name, understood by getaddrinfo.
  */

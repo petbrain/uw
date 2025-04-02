@@ -516,7 +516,7 @@ UwResult uw_basename(UwValuePtr filename)
         uw_expect(string, filename);
         parts = uw_string_rsplit_chr(filename, '/', 1);
     }
-    return uw_list_item(&parts, -1);
+    return uw_array_item(&parts, -1);
 }
 
 UwResult uw_dirname(UwValuePtr filename)
@@ -529,12 +529,12 @@ UwResult uw_dirname(UwValuePtr filename)
         uw_expect(string, filename);
         parts = uw_string_rsplit_chr(filename, '/', 1);
     }
-    return uw_list_item(&parts, 0);
+    return uw_array_item(&parts, 0);
 }
 
 UwResult _uw_path_v(...)
 {
-    UwValue parts = uw_create(UwTypeId_List);
+    UwValue parts = uw_create(UwTypeId_Array);
     va_list ap;
     va_start(ap);
     for (;;) {{
@@ -548,7 +548,7 @@ UwResult _uw_path_v(...)
             return uw_move(&arg);
         }
         if (uw_is_string(&arg) || uw_is_charptr(&arg)) {
-            if (!uw_list_append(&parts, &arg)) {
+            if (!uw_array_append(&parts, &arg)) {
                 _uw_destroy_args(ap);
                 va_end(ap);
                 return UwOOM();
@@ -556,12 +556,12 @@ UwResult _uw_path_v(...)
         }
     }}
     va_end(ap);
-    return uw_list_join("/", &parts);
+    return uw_array_join('/', &parts);
 }
 
 UwResult _uw_path_p(...)
 {
-    UwValue parts = uw_create(UwTypeId_List);
+    UwValue parts = uw_create(UwTypeId_Array);
     va_list ap;
     va_start(ap);
     for (;;) {
@@ -574,12 +574,12 @@ UwResult _uw_path_p(...)
             return uw_clone(arg);
         }
         if (uw_is_string(arg) || uw_is_charptr(arg)) {
-            if (!uw_list_append(&parts, arg)) {
+            if (!uw_array_append(&parts, arg)) {
                 va_end(ap);
                 return UwOOM();
             }
         }
     }
     va_end(ap);
-    return uw_list_join("/", &parts);
+    return uw_array_join('/', &parts);
 }

@@ -27,7 +27,7 @@ UwResult _uw_map_create(...)
 
 static inline unsigned get_map_length(_UwMap* map)
 {
-    return _uw_list_length(&map->kv_pairs) >> 1;
+    return _uw_array_length(&map->kv_pairs) >> 1;
 }
 
 static uint8_t get_item_size(unsigned capacity)
@@ -97,9 +97,9 @@ static void set_ht_item(struct _UwHashTable* ht, unsigned index, unsigned value)
  * Notes on indexes and naming conventions.
  *
  * In hash map we store indexes of key-value pair (named `kv_index`),
- * not the index in kv_pairs list.
+ * not the index in kv_pairs array.
  *
- * key_index is the index of key in kv_pais list, suitable for passing to uw_list_get.
+ * key_index is the index of key in kv_pais array, suitable for passing to uw_array_get.
  *
  * So,
  *
@@ -238,10 +238,10 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
  * ht_offset is a hint, can be 0. If greater or equal 1/4 of capacity, hash table size will be doubled.
  */
 {
-    // expand list if necessary
-    unsigned list_cap = desired_capacity << 1;
-    if (list_cap > _uw_list_capacity(&map->kv_pairs)) {
-        if (!_uw_list_resize(type_id, &map->kv_pairs, list_cap)) {
+    // expand array if necessary
+    unsigned array_cap = desired_capacity << 1;
+    if (array_cap > _uw_array_capacity(&map->kv_pairs)) {
+        if (!_uw_array_resize(type_id, &map->kv_pairs, array_cap)) {
             return false;
         }
     }
@@ -267,7 +267,7 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
     // rebuild hash table
     UwValuePtr key_ptr = &map->kv_pairs.items[0];
     unsigned kv_index = 1;  // index is 1-based, zero means unused item in hash table
-    unsigned n = _uw_list_length(&map->kv_pairs);
+    unsigned n = _uw_array_length(&map->kv_pairs);
     uw_assert((n & 1) == 0);
     while (n) {
         set_hash_table_item(ht, uw_hash(key_ptr), kv_index);
@@ -280,7 +280,7 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
 
 static bool update_map(UwValuePtr map, UwValuePtr key, UwValuePtr value)
 /*
- * key and value are moved to the internal list
+ * key and value are moved to the internal array
  */
 {
     UwTypeId type_id = map->type_id;
@@ -306,19 +306,19 @@ static bool update_map(UwValuePtr map, UwValuePtr key, UwValuePtr value)
         return false;
     }
     // append key and value
-    unsigned kv_index = _uw_list_length(&__map->kv_pairs) >> 1;
+    unsigned kv_index = _uw_array_length(&__map->kv_pairs) >> 1;
     set_hash_table_item(&__map->hash_table, uw_hash(key), kv_index + 1);
 
-    if (!_uw_list_append_item(type_id, &__map->kv_pairs, key, map)) {
+    if (!_uw_array_append_item(type_id, &__map->kv_pairs, key, map)) {
         goto panic;
     }
-    if (!_uw_list_append_item(type_id, &__map->kv_pairs, value, map)) {
+    if (!_uw_array_append_item(type_id, &__map->kv_pairs, value, map)) {
         goto panic;
     }
     return true;
 
 panic:
-    uw_panic("Failed append to preallocated list");
+    uw_panic("Failed append to preallocated array");
 }
 
 /****************************************************************
@@ -329,7 +329,7 @@ static void map_fini(UwValuePtr self)
 {
     _UwMap* map = get_data_ptr(self);
 
-    _uw_destroy_list(self->type_id, &map->kv_pairs, self);
+    _uw_destroy_array(self->type_id, &map->kv_pairs, self);
 
     struct _UwHashTable* ht = &map->hash_table;
     free_hash_table(self->type_id, ht);
@@ -361,7 +361,7 @@ static UwResult map_init(UwValuePtr self, void* ctor_args)
     struct _UwHashTable* ht = &map->hash_table;
     ht->items_used = 0;
     if (init_hash_table(self->type_id, ht, 0, UWMAP_INITIAL_CAPACITY)) {
-        if (_uw_alloc_list(self->type_id, &map->kv_pairs, UWMAP_INITIAL_CAPACITY * 2)) {
+        if (_uw_alloc_array(self->type_id, &map->kv_pairs, UWMAP_INITIAL_CAPACITY * 2)) {
             return UwOK();
         }
     }
@@ -373,7 +373,7 @@ static void map_hash(UwValuePtr self, UwHashContext* ctx)
 {
     _uw_hash_uint64(ctx, self->type_id);
     _UwMap* map = get_data_ptr(self);
-    for (unsigned i = 0, n = _uw_list_length(&map->kv_pairs); i < n; i++) {
+    for (unsigned i = 0, n = _uw_array_length(&map->kv_pairs); i < n; i++) {
         UwValuePtr item = &map->kv_pairs.items[i];
         _uw_call_hash(item, ctx);
     }
@@ -426,12 +426,12 @@ static void map_dump(UwValuePtr self, FILE* fp, int first_indent, int next_inden
     };
 
     _UwMap* map = get_data_ptr(self);
-    fprintf(fp, "%u items, list items/capacity=%u/%u\n",
-            get_map_length(map), _uw_list_length(&map->kv_pairs), _uw_list_capacity(&map->kv_pairs));
+    fprintf(fp, "%u items, array items/capacity=%u/%u\n",
+            get_map_length(map), _uw_array_length(&map->kv_pairs), _uw_array_capacity(&map->kv_pairs));
 
     next_indent += 4;
     UwValuePtr item_ptr = &map->kv_pairs.items[0];
-    for (unsigned n = _uw_list_length(&map->kv_pairs); n; n -= 2) {
+    for (unsigned n = _uw_array_length(&map->kv_pairs); n; n -= 2) {
 
         UwValuePtr key   = item_ptr++;
         UwValuePtr value = item_ptr++;
@@ -496,7 +496,7 @@ static bool map_is_true(UwValuePtr self)
 
 static inline bool map_eq(_UwMap* a, _UwMap* b)
 {
-    return _uw_list_eq(&a->kv_pairs, &b->kv_pairs);
+    return _uw_array_eq(&a->kv_pairs, &b->kv_pairs);
 }
 
 static bool map_equal_sametype(UwValuePtr self, UwValuePtr other)
@@ -674,10 +674,10 @@ bool _uw_map_del(UwValuePtr self, UwValuePtr key)
     ht->items_used--;
 
     // delete key-value pair
-    _uw_list_del(&map->kv_pairs, key_index, key_index + 2);
+    _uw_array_del(&map->kv_pairs, key_index, key_index + 2);
 
-    if (key_index + 2 < _uw_list_length(&map->kv_pairs)) {
-        // key-value was not the last pair in the list,
+    if (key_index + 2 < _uw_array_length(&map->kv_pairs)) {
+        // key-value was not the last pair in the array,
         // decrement indexes in the hash table that are greater than index of the deleted pair
         unsigned threshold = (key_index + 2) >> 1;
         threshold++; // kv_indexes in hash table are 1-based
@@ -705,7 +705,7 @@ bool uw_map_item(UwValuePtr self, unsigned index, UwValuePtr key, UwValuePtr val
 
     index <<= 1;
 
-    if (index < _uw_list_length(&map->kv_pairs)) {
+    if (index < _uw_array_length(&map->kv_pairs)) {
         uw_destroy(key);
         uw_destroy(value);
         *key   = uw_clone(&map->kv_pairs.items[index]);

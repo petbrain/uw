@@ -215,7 +215,7 @@ typedef _UwValue  UwResult;  // alias for return values
 #define UwTypeId_Struct      9U  // the base for reference counted data
 #define UwTypeId_Compound   10U  // the base for values that may contain circular references
 #define UwTypeId_Status     11U  // value_data is optional
-#define UwTypeId_List       12U
+#define UwTypeId_Array      12U
 #define UwTypeId_Map        13U
 
 // char* sub-types
@@ -246,7 +246,7 @@ struct __UwCompoundChain {
      * Compound values may contain cyclic references.
      * This structure along with function `_uw_on_chain`
      * helps to detect them.
-     * See dump implementation for list and map values.
+     * See dump implementation for array and map values.
      */
     struct __UwCompoundChain* prev;
     UwValuePtr value;
@@ -324,7 +324,7 @@ typedef struct {
 #define uw_is_struct(value)    uw_is_subtype((value), UwTypeId_Struct)
 #define uw_is_compound(value)  uw_is_subtype((value), UwTypeId_Compound)
 #define uw_is_status(value)    uw_is_subtype((value), UwTypeId_Status)
-#define uw_is_list(value)      uw_is_subtype((value), UwTypeId_List)
+#define uw_is_array(value)     uw_is_subtype((value), UwTypeId_Array)
 #define uw_is_map(value)       uw_is_subtype((value), UwTypeId_Map)
 #define uw_is_file(value)      uw_is_subtype((value), UwTypeId_File)
 #define uw_is_stringio(value)  uw_is_subtype((value), UwTypeId_StringIO)
@@ -341,7 +341,7 @@ typedef struct {
 #define uw_assert_struct(value)    uw_assert(uw_is_struct  (value))
 #define uw_assert_compound(value)  uw_assert(uw_is_compound(value))
 #define uw_assert_status(value)    uw_assert(uw_is_status  (value))
-#define uw_assert_list(value)      uw_assert(uw_is_list    (value))
+#define uw_assert_array(value)     uw_assert(uw_is_array   (value))
 #define uw_assert_map(value)       uw_assert(uw_is_map     (value))
 #define uw_assert_file(value)      uw_assert(uw_is_file    (value))
 #define uw_assert_stringio(value)  uw_assert(uw_is_stringio(value))
@@ -399,7 +399,7 @@ extern UwType** _uw_types;
     // UwMethodPopItem -- necessary here? it's just delete_item(length - 1)
 #define UwInterfaceId_String        5
     // TBD substring, truncate, trim, append_substring, etc
-#define UwInterfaceId_List          6
+#define UwInterfaceId_Array          6
     // string supports this interface
     // UwMethodAppend
     // UwMethodSlice
@@ -569,8 +569,8 @@ void uw_dump_types(FILE* fp);
 #define UW_ERROR_EOF                  6
 #define UW_ERROR_INDEX_OUT_OF_RANGE   7
 
-// list errors
-#define UW_ERROR_EXTRACT_FROM_EMPTY_LIST  8
+// array errors
+#define UW_ERROR_EXTRACT_FROM_EMPTY_ARRAY  8
 
 // map errors
 #define UW_ERROR_KEY_NOT_FOUND        9
@@ -670,7 +670,7 @@ void uw_print_status(FILE* fp, UwValuePtr status);
  *
  * Uw<Typename> macros define rvalues that should be destroyed either explicitly
  * or automatically, by assigning them to an automatically cleaned variable
- * or passing to UwList(), UwMap() or other uw_*_va function that takes care of its arguments.
+ * or passing to UwArray(), UwMap() or other uw_*_va function that takes care of its arguments.
  */
 
 #define __UWDECL_Null(name)  \
@@ -1092,7 +1092,7 @@ static inline void _uw_destroy_args(va_list ap)
  * Helper for functions that accept values created on stack during function call.
  * Such values cannot be automatically cleaned on error, the callee
  * should do that.
- * See UwList(), uw_list_append_va, UwMap(), uw_map_update_va
+ * See UwArray(), uw_array_append_va, UwMap(), uw_map_update_va
  */
 {
     for (;;) {{
