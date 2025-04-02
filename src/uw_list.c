@@ -35,9 +35,7 @@ static UwResult list_init(UwValuePtr self, void* ctor_args)
     // if we did not knew, then:
     // UwValue status = uw_ancestor_of(UwTypeId_List)->init(self, ctor_args);
 
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
 
     // allocate list
 
@@ -61,9 +59,7 @@ static void list_hash(UwValuePtr self, UwHashContext* ctx)
 static UwResult list_deepcopy(UwValuePtr self)
 {
     UwValue dest = uw_create(self->type_id);
-    if (uw_error(&dest)) {
-        return uw_move(&dest);
-    }
+    uw_return_if_error(&dest);
 
     _UwList* src_list = get_data_ptr(self);
     _UwList* dest_list = get_data_ptr(&dest);
@@ -197,9 +193,7 @@ UwResult _uw_list_create(...)
     }
     UwValue status = uw_list_append_ap(&list, ap);
     va_end(ap);
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
     return uw_move(&list);
 }
 
@@ -508,9 +502,8 @@ UwResult uw_list_slice(UwValuePtr self, unsigned start_index, unsigned end_index
     unsigned slice_len = end_index - start_index;
 
     UwValue dest = UwList();
-    if (uw_error(&dest)) {
-        return uw_move(&dest);
-    }
+    uw_return_if_error(&dest);
+
     if (!uw_list_resize(&dest, slice_len)) {
         return UwOOM();
     }
@@ -630,9 +623,8 @@ UwResult _uw_list_join(UwValuePtr separator, UwValuePtr list)
 
     // join list items
     UwValue result = uw_create_empty_string(result_len, max_char_size);
-    if (uw_error(&result)) {
-        return uw_move(&result);
-    }
+    uw_return_if_error(&result);
+
     unsigned charptr_index = 0;
     for (unsigned i = 0; i < num_items; i++) {{   // nested scope for autocleaning item
         UwValue item = uw_list_item(list, i);

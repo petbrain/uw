@@ -15,9 +15,7 @@ UwResult _uw_struct_alloc(UwValuePtr self, void* ctor_args)
     // call init method
 
     UwValue status = type->init(self, ctor_args);
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
     return UwOK();
 }
 
@@ -44,9 +42,7 @@ UwResult _uw_struct_create(UwTypeId type_id, void* ctor_args)
         .type_id = type_id
     };
     UwValue status = _uw_struct_alloc(&result, ctor_args);
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
     return uw_move(&result);
 }
 

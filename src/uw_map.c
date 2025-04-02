@@ -21,9 +21,7 @@ UwResult _uw_map_create(...)
     }
     UwValue status = uw_map_update_ap(&map, ap);
     va_end(ap);
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
     return uw_move(&map);
 }
 
@@ -353,9 +351,7 @@ static UwResult map_init(UwValuePtr self, void* ctor_args)
     // if we did not knew, then:
     // UwValue status = uw_ancestor_of(UwTypeId_Map)->init(self, ctor_args);
 
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
 
     // init map
 
@@ -370,7 +366,7 @@ static UwResult map_init(UwValuePtr self, void* ctor_args)
         }
     }
     map_fini(self);
-    return uw_move(&error);;
+    return uw_move(&error);
 }
 
 static void map_hash(UwValuePtr self, UwHashContext* ctx)
@@ -386,9 +382,7 @@ static void map_hash(UwValuePtr self, UwHashContext* ctx)
 static UwResult map_deepcopy(UwValuePtr self)
 {
     UwValue dest = UwMap();
-    if (uw_error(&dest)) {
-        return uw_move(&dest);
-    }
+    uw_return_if_error(&dest);
 
     _UwMap* src_map = get_data_ptr(self);
     unsigned map_length    = get_map_length(src_map);
@@ -398,22 +392,18 @@ static UwResult map_deepcopy(UwValuePtr self)
     }
 
     UwValuePtr kv = _uw_list_item(&src_map->kv_pairs, 0);
-    for (unsigned i = 0; i < map_length; i++) {
+    for (unsigned i = 0; i < map_length; i++) {{
         UwValue key = uw_clone(kv++);  // okay to clone because keys are already deeply copied
-        if (uw_error(&key)) {
-            return uw_move(&key);
-        }
+        uw_return_if_error(&key);
+
         UwValue value = uw_clone(kv++);
-        if (uw_error(&value)) {
-            return uw_move(&key);
-        }
+        uw_return_if_error(&value);
+
         if (!update_map(&dest, &key, &value)) {
-            // XXX should not happen because the map already resized
-            uw_destroy(&key);
-            uw_destroy(&value);
+            // should not happen because the map already resized
             return UwOOM();
         }
-    }
+    }}
     return uw_move(&dest);
 }
 

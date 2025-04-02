@@ -19,15 +19,11 @@ UwResult uw_parse_kvargs(int argc, char* argv[])
 
         // convert arg to UW string
         UwValue arg = _uw_create_string_u8((char8_t*) argv[i]);
-        if (uw_error(&arg)) {
-            return uw_move(&arg);
-        }
+        uw_return_if_error(&arg);
 
         // split by =
         UwValue kv = uw_string_split_chr(&arg, '=', 1);
-        if (uw_error(&kv)) {
-            return uw_move(&kv);
-        }
+        uw_return_if_error(&kv);
 
         UwValue key = uw_list_item(&kv, 0);
         if (uw_list_length(&kv) == 1) {

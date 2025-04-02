@@ -1996,9 +1996,7 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
     uint8_t char_size = _uw_string_char_size(str);
 
     UwValue result = UwList();
-    if (uw_error(&result)) {
-        return uw_move(&result);
-    }
+    uw_return_if_error(&result);
 
     char8_t* ptr = _uw_string_char_ptr(str, 0);
     char8_t* start = ptr;
@@ -2012,9 +2010,8 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
             // create substring
             unsigned substr_len = i - start_i;
             UwValue substr = uw_create_empty_string(substr_len, char_width_to_char_size(substr_width));
-            if (uw_error(&substr)) {
-                return uw_move(&substr);
-            }
+            uw_return_if_error(&substr);
+
             if (substr_len) {
                 strmeth->copy_to(start, &substr, 0, substr_len);
                 _uw_string_set_length(&substr, substr_len);
@@ -2046,9 +2043,8 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
     {
         unsigned substr_len = i - start_i;
         UwValue substr = uw_create_empty_string(substr_len, char_width_to_char_size(substr_width));
-        if (uw_error(&substr)) {
-            return uw_move(&substr);
-        }
+        uw_return_if_error(&substr);
+
         if (substr_len) {
             strmeth->copy_to(start, &substr, 0, substr_len);
             _uw_string_set_length(&substr, substr_len);
@@ -2084,9 +2080,8 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
             // create substring
             unsigned substr_len = end_i - i;
             UwValue substr = uw_create_empty_string(substr_len, char_width_to_char_size(substr_width));
-            if (uw_error(&substr)) {
-                return uw_move(&substr);
-            }
+            uw_return_if_error(&substr);
+
             if (substr_len) {
                 strmeth->copy_to(start + char_size, &substr, 0, substr_len);
                 _uw_string_set_length(&substr, substr_len);
@@ -2118,9 +2113,8 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
     {
         unsigned substr_len = end_i + 1;
         UwValue substr = uw_create_empty_string(substr_len, char_width_to_char_size(substr_width));
-        if (uw_error(&substr)) {
-            return uw_move(&substr);
-        }
+        uw_return_if_error(&substr);
+
         if (substr_len) {
             strmeth->copy_to(start, &substr, 0, substr_len);
             _uw_string_set_length(&substr, substr_len);
@@ -2231,9 +2225,7 @@ UwResult _uw_strcat_ap_v(va_list ap)
 
     // allocate resulting string
     UwValue str = uw_create_empty_string(result_len, max_char_size);
-    if (uw_error(&str)) {
-        return uw_move(&str);
-    }
+    uw_return_if_error(&str);
 
     // concatenate
     unsigned charptr_index = 0;
@@ -2324,9 +2316,7 @@ UwResult _uw_strcat_ap_p(va_list ap)
 
     // allocate resulting string
     UwValue str = uw_create_empty_string(result_len, max_char_size);
-    if (uw_error(&str)) {
-        return uw_move(&str);
-    }
+    uw_return_if_error(&str);
 
     // concatenate
     unsigned charptr_index = 0;

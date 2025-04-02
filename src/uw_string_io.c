@@ -160,9 +160,7 @@ static UwResult read_line(UwValuePtr self)
 {
     UwValue result = UwString();
     UwValue status = read_line_inplace(self, &result);
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
     return uw_move(&result);
 }
 

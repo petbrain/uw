@@ -174,9 +174,7 @@ static UwResult status_deepcopy(UwValuePtr self)
     result.status_data = nullptr;
 
     UwValue err = _uw_struct_alloc(&result, nullptr);
-    if (uw_error(&err)) {
-        return uw_move(&err);
-    }
+    uw_return_if_error(&err);
 
     result.status_data->file_name = self->status_data->file_name;
     result.status_data->line_number = self->status_data->line_number;

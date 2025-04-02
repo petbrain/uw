@@ -274,9 +274,7 @@ static UwResult read_line(UwValuePtr self)
     UwValue result = UwString();
     if (uw_ok(&result)) {
         UwValue status = read_line_inplace(self, &result);
-        if (uw_error(&status)) {
-            return uw_move(&status);
-        }
+        uw_return_if_error(&status);
     }
     return uw_move(&result);
 }
@@ -289,9 +287,7 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
 
     if (f->buffer == nullptr) {
         UwValue status = start_read_lines(self);
-        if (uw_error(&status)) {
-            return uw_move(&status);
-        }
+        uw_return_if_error(&status);
     }
 
     if (uw_is_string(&f->pushback)) {
@@ -313,9 +309,8 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
             f->position = 0;
             {
                 UwValue status = file_read(self, f->buffer, LINE_READER_BUFFER_SIZE, &f->data_size);
-                if (uw_error(&status)) {
-                    return uw_move(&status);
-                }
+                uw_return_if_error(&status);
+
                 if (f->data_size == 0) {
                     // XXX warn if f->partial_utf8_len != 0
                     return UwError(UW_ERROR_EOF);
@@ -496,17 +491,14 @@ static void init_file_type()
 UwResult _uw_file_open(UwValuePtr file_name, int flags, mode_t mode)
 {
     UwValue normalized_filename = uw_clone(file_name);  // this converts CharPtr to String
-    if (uw_error(&normalized_filename)) {
-        return uw_move(&normalized_filename);
-    }
+    uw_return_if_error(&normalized_filename);
+
     UwValue file = uw_create(UwTypeId_File);
-    if (uw_error(&file)) {
-        return uw_move(&file);
-    }
+    uw_return_if_error(&file);
+
     UwValue status = uw_interface(file.type_id, File)->open(&file, &normalized_filename, flags, mode);
-    if (uw_error(&status)) {
-        return uw_move(&status);
-    }
+    uw_return_if_error(&status);
+
     return uw_move(&file);
 }
 

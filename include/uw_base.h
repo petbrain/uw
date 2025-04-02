@@ -612,6 +612,13 @@ static inline bool uw_error(UwValuePtr status)
     return !uw_ok(status);
 }
 
+#define uw_return_if_error(value_ptr)  \
+    do {  \
+        if (uw_error(value_ptr)) {  \
+            return uw_move(value_ptr);  \
+        }  \
+    } while (false)
+
 static inline bool uw_eof(UwValuePtr status)
 {
     if (!status) {
