@@ -214,6 +214,11 @@ unsigned uw_string_skip_chars(UwValuePtr str, unsigned position, char32_t* skipc
  * that does not support unicode character classification.
  */
 
+bool uw_string_isdigit(UwValuePtr str);
+/*
+ * Return true if `str` is not empty and contains all digits.
+ */
+
 /****************************************************************
  * Constructors
  */

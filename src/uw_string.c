@@ -2403,3 +2403,23 @@ UwResult uw_string_to_float(UwValuePtr str)
     }
     return uw_move(&result);
 }
+
+bool uw_string_isdigit(UwValuePtr str)
+{
+    uw_assert_string(str);
+    unsigned length = _uw_string_length(str);
+    if (length == 0) {
+        return false;
+    }
+    StrMethods* strmeth = get_str_methods(str);
+    uint8_t char_size = _uw_string_char_size(str);
+    uint8_t* charptr = _uw_string_char_ptr(str, 0);
+    for (unsigned i = 0; i < length; i++) {
+        char32_t c = strmeth->get_char(charptr);
+        if (!uw_isdigit(c)) {
+            return false;
+        }
+        charptr += char_size;
+    }
+    return true;
+}
