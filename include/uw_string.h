@@ -246,16 +246,6 @@ UwResult uw_create_empty_string(unsigned capacity, uint8_t char_size);
  * Append functions
  */
 
-#define uw_string_append_char(dest, chr) _Generic((chr), \
-                  char: _uw_string_append_char, \
-         unsigned char: _uw_string_append_char, \
-              char32_t: _uw_string_append_c32,  \
-                   int: _uw_string_append_c32   \
-    )((dest), (chr))
-
-bool _uw_string_append_char(UwValuePtr dest, char       c);
-bool _uw_string_append_c32 (UwValuePtr dest, char32_t   c);
-
 #define uw_string_append(dest, src) _Generic((src),   \
               char32_t: _uw_string_append_c32,        \
                    int: _uw_string_append_c32,        \
@@ -265,6 +255,7 @@ bool _uw_string_append_c32 (UwValuePtr dest, char32_t   c);
             UwValuePtr: _uw_string_append             \
     )((dest), (src))
 
+bool _uw_string_append_c32 (UwValuePtr dest, char32_t   c);
 bool  uw_string_append_cstr(UwValuePtr dest, char*      src);
 bool _uw_string_append_u8  (UwValuePtr dest, char8_t*   src);
 bool _uw_string_append_u32 (UwValuePtr dest, char32_t*  src);

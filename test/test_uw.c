@@ -406,7 +406,7 @@ void test_string()
 
         // XXX TODO increase capacity to more than 64K
         for (int i = 0; i < 250; i++) {
-            uw_string_append_char(&v, ' ');
+            uw_string_append(&v, ' ');
         }
         TEST(_uw_string_length(&v) == 256);
         TEST(_uw_string_char_size(&v) == 1);

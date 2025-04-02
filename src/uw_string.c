@@ -1608,16 +1608,6 @@ void uw_destroy_cstring(CStringPtr* str)
     *str = nullptr;
 }
 
-bool _uw_string_append_char(UwValuePtr dest, char c)
-{
-    if (!expand_string(dest, 1, 1)) {
-        return false;
-    }
-    unsigned length = _uw_string_inc_length(dest, 1);
-    get_str_methods(dest)->put_char(_uw_string_char_ptr(dest, length), (unsigned char) c);
-    return true;
-}
-
 bool _uw_string_append_c32(UwValuePtr dest, char32_t c)
 {
     if (!expand_string(dest, 1, calc_char_size(c))) {
