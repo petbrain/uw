@@ -37,11 +37,6 @@ static inline unsigned _uw_list_capacity(_UwList* list)
     return list->capacity;
 }
 
-static inline UwValuePtr _uw_list_item(_UwList* list, unsigned index)
-{
-    return &list->items[index];
-}
-
 bool _uw_alloc_list(UwTypeId type_id, _UwList* list, unsigned capacity);
 /*
  * - allocate list items

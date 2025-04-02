@@ -404,7 +404,7 @@ bool _uw_list_insert(UwValuePtr list, unsigned index, UwValuePtr item)
     return true;
 }
 
-UwResult uw_list_item(UwValuePtr self, int index)
+UwResult _uw_list_item_signed(UwValuePtr self, ssize_t index)
 {
     uw_assert_list(self);
 
@@ -415,13 +415,24 @@ UwResult uw_list_item(UwValuePtr self, int index)
         if (index < 0) {
             return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
         }
-    } else if (((unsigned) index) >= list->length) {
+    } else if (index >= list->length) {
         return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
     }
     return uw_clone(&list->items[index]);
 }
 
-UwResult uw_list_set_item(UwValuePtr self, int index, UwValuePtr item)
+UwResult _uw_list_item(UwValuePtr self, unsigned index)
+{
+    uw_assert_list(self);
+    _UwList* list = get_data_ptr(self);
+    if (index < list->length) {
+        return uw_clone(&list->items[index]);
+    } else {
+        return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
+    }
+}
+
+UwResult _uw_list_set_item_signed(UwValuePtr self, ssize_t index, UwValuePtr item)
 {
     uw_assert_list(self);
 
@@ -432,13 +443,38 @@ UwResult uw_list_set_item(UwValuePtr self, int index, UwValuePtr item)
         if (index < 0) {
             return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
         }
-    } else if (((unsigned) index) >= list->length) {
+    } else if (index >= list->length) {
         return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
     }
 
     uw_destroy(&list->items[index]);
     list->items[index] = uw_clone(item);
     return UwOK();
+}
+
+UwResult _uw_list_set_item(UwValuePtr self, unsigned index, UwValuePtr item)
+{
+    uw_assert_list(self);
+    _UwList* list = get_data_ptr(self);
+    if (index < list->length) {
+        uw_destroy(&list->items[index]);
+        list->items[index] = uw_clone(item);
+        return UwOK();
+    } else {
+        return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
+    }
+}
+
+UwResult uw_list_pull(UwValuePtr self)
+{
+    uw_assert_list(self);
+    _UwList* list = get_data_ptr(self);
+    if (list->length == 0) {
+        return UwError(UW_ERROR_EXTRACT_FROM_EMPTY_LIST);
+    }
+    _UwValue result = uw_clone(&list->items[0]);
+    _uw_list_del(list, 0, 1);
+    return result;
 }
 
 UwResult uw_list_pop(UwValuePtr self)
@@ -450,7 +486,7 @@ UwResult uw_list_pop(UwValuePtr self)
 UwResult _uw_list_pop(_UwList* list)
 {
     if (list->length == 0) {
-        return UwError(UW_ERROR_POP_FROM_EMPTY_LIST);
+        return UwError(UW_ERROR_EXTRACT_FROM_EMPTY_LIST);
     }
     list->length--;
     return uw_move(&list->items[list->length]);

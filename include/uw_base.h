@@ -570,7 +570,7 @@ void uw_dump_types(FILE* fp);
 #define UW_ERROR_INDEX_OUT_OF_RANGE   7
 
 // list errors
-#define UW_ERROR_POP_FROM_EMPTY_LIST  8
+#define UW_ERROR_EXTRACT_FROM_EMPTY_LIST  8
 
 // map errors
 #define UW_ERROR_KEY_NOT_FOUND        9

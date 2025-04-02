@@ -144,32 +144,56 @@ static inline UwResult _uw_list_join_u8_wrapper(char* separator, UwValuePtr list
 }
 
 /****************************************************************
+ * Get/set list items
+ */
+
+UwResult uw_list_pull(UwValuePtr list);
+/*
+ * Extract first item from the list.
+ */
+
+UwResult uw_list_pop(UwValuePtr list);
+/*
+ * Extract last item from the list.
+ */
+
+#define uw_list_item(list, index) _Generic((index), \
+             int: _uw_list_item_signed,  \
+         ssize_t: _uw_list_item_signed,  \
+        unsigned: _uw_list_item  \
+    )((list), (index))
+
+UwResult _uw_list_item_signed(UwValuePtr list, ssize_t index);
+UwResult _uw_list_item(UwValuePtr list, unsigned index);
+/*
+ * Return a clone of list item.
+ * Negative indexes are allowed for signed version,
+ * where -1 is the index of last item.
+ */
+
+#define uw_list_set_item(list, index, item) _Generic((index), \
+             int: _uw_list_set_item_signed,  \
+         ssize_t: _uw_list_set_item_signed,  \
+        unsigned: _uw_list_set_item  \
+    )((list), (index), (item))
+
+UwResult _uw_list_set_item_signed(UwValuePtr list, ssize_t index, UwValuePtr item);
+UwResult _uw_list_set_item(UwValuePtr list, unsigned index, UwValuePtr item);
+/*
+ * Set item at specific index.
+ * Negative indexes are allowed for signed version,
+ * where -1 is the index of last item.
+ * Return UwStatus.
+ */
+
+
+/****************************************************************
  * Miscellaneous list functions
  */
 
 bool uw_list_resize(UwValuePtr list, unsigned desired_capacity);
 
 unsigned uw_list_length(UwValuePtr list);
-
-UwResult uw_list_item(UwValuePtr list, int index);
-/*
- * Return a clone of list item. Negative indexes are allowed: -1 last item.
- * It's the caller's responsibility to destroy returned value to avoid memory leaks.
- * The simplest way is assigning it to an UwValue.
- */
-
-UwResult uw_list_set_item(UwValuePtr list, int index, UwValuePtr item);
-/*
- * Set item at specific index.
- * Return UwStatus.
- */
-
-UwResult uw_list_pop(UwValuePtr list);
-/*
- * Extract last item from the list.
- * It's the caller's responsibility to destroy returned value to avoid memory leaks.
- * The simplest way is assigning it to an UwValue.
- */
 
 void uw_list_del(UwValuePtr list, unsigned start_index, unsigned end_index);
 /*

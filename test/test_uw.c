@@ -710,6 +710,14 @@ void test_list()
             TEST(uw_equal(&item, 948));
         }
     }
+
+    UwValue pulled = uw_list_pull(&list);
+    TEST(uw_equal(&pulled, 0));
+    TEST(uw_list_length(&list) == 899);
+    pulled = uw_list_pull(&list);
+    TEST(uw_equal(&pulled, 1));
+    TEST(uw_list_length(&list) == 898);
+
     { // test join
         UwValue list = UwList();
         uw_list_append(&list, "Hello");

@@ -191,7 +191,7 @@ static unsigned lookup(_UwMap* map, UwValuePtr key, unsigned* ht_index, unsigned
         // make index 0-based
         kv_index--;
 
-        UwValuePtr k = _uw_list_item(&map->kv_pairs, kv_index * 2);
+        UwValuePtr k = &map->kv_pairs.items[kv_index * 2];
 
         // compare keys
         if (_uw_equal(k, key)) {
@@ -265,7 +265,7 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
     }
 
     // rebuild hash table
-    UwValuePtr key_ptr = _uw_list_item(&map->kv_pairs, 0);
+    UwValuePtr key_ptr = &map->kv_pairs.items[0];
     unsigned kv_index = 1;  // index is 1-based, zero means unused item in hash table
     unsigned n = _uw_list_length(&map->kv_pairs);
     uw_assert((n & 1) == 0);
@@ -294,7 +294,7 @@ static bool update_map(UwValuePtr map, UwValuePtr key, UwValuePtr value)
     if (key_index != UINT_MAX) {
         // found key, update value
         unsigned value_index = key_index + 1;
-        UwValuePtr v_ptr = _uw_list_item(&__map->kv_pairs, value_index);
+        UwValuePtr v_ptr = &__map->kv_pairs.items[value_index];
         uw_destroy(v_ptr);
         *v_ptr = uw_move(value);
         return true;
@@ -374,7 +374,7 @@ static void map_hash(UwValuePtr self, UwHashContext* ctx)
     _uw_hash_uint64(ctx, self->type_id);
     _UwMap* map = get_data_ptr(self);
     for (unsigned i = 0, n = _uw_list_length(&map->kv_pairs); i < n; i++) {
-        UwValuePtr item = _uw_list_item(&map->kv_pairs, i);
+        UwValuePtr item = &map->kv_pairs.items[i];
         _uw_call_hash(item, ctx);
     }
 }
@@ -391,7 +391,7 @@ static UwResult map_deepcopy(UwValuePtr self)
         return UwOOM();
     }
 
-    UwValuePtr kv = _uw_list_item(&src_map->kv_pairs, 0);
+    UwValuePtr kv = &src_map->kv_pairs.items[0];
     for (unsigned i = 0; i < map_length; i++) {{
         UwValue key = uw_clone(kv++);  // okay to clone because keys are already deeply copied
         uw_return_if_error(&key);
@@ -430,7 +430,7 @@ static void map_dump(UwValuePtr self, FILE* fp, int first_indent, int next_inden
             get_map_length(map), _uw_list_length(&map->kv_pairs), _uw_list_capacity(&map->kv_pairs));
 
     next_indent += 4;
-    UwValuePtr item_ptr = _uw_list_item(&map->kv_pairs, 0);
+    UwValuePtr item_ptr = &map->kv_pairs.items[0];
     for (unsigned n = _uw_list_length(&map->kv_pairs); n; n -= 2) {
 
         UwValuePtr key   = item_ptr++;
@@ -649,7 +649,7 @@ UwResult _uw_map_get(UwValuePtr self, UwValuePtr key)
 
     // return value
     unsigned value_index = key_index + 1;
-    return uw_clone(_uw_list_item(&map->kv_pairs, value_index));
+    return uw_clone(&map->kv_pairs.items[value_index]);
 }
 
 bool _uw_map_del(UwValuePtr self, UwValuePtr key)
@@ -708,8 +708,8 @@ bool uw_map_item(UwValuePtr self, unsigned index, UwValuePtr key, UwValuePtr val
     if (index < _uw_list_length(&map->kv_pairs)) {
         uw_destroy(key);
         uw_destroy(value);
-        *key   = uw_clone(_uw_list_item(&map->kv_pairs, index));
-        *value = uw_clone(_uw_list_item(&map->kv_pairs, index + 1));
+        *key   = uw_clone(&map->kv_pairs.items[index]);
+        *value = uw_clone(&map->kv_pairs.items[index + 1]);
         return true;
 
     } else {
