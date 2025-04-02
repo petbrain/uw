@@ -764,6 +764,15 @@ void test_list()
         TEST(uw_endswith(&str, U"คืบหน้า"));
         TEST(!uw_endswith(&str, "wow"));
     }
+
+    { // test isdigit
+        UwValue empty = UwString();
+        UwValue nondigit = uw_create_string(u8"123รูปโป๊");
+        UwValue digit = uw_create_string("456");
+        TEST(!uw_string_isdigit(&empty));
+        TEST(!uw_string_isdigit(&nondigit));
+        TEST(uw_string_isdigit(&digit));
+    }
 }
 
 void test_map()
