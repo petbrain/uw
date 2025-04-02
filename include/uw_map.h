@@ -81,10 +81,6 @@ static inline bool _uw_map_has_key_u8_wrapper(UwValuePtr map, char* key)
 /****************************************************************
  * Get value by `key`. Return UW_ERROR_NO_KEY if `key`
  * is not in the `map`.
- *
- * It's the caller's responsibility to destroy returned value
- * to avoid memory leaks.
- * The simplest way is assigning it to UwValue.
  */
 
 #define uw_map_get(map, key) _Generic((key),    \
@@ -178,8 +174,6 @@ bool uw_map_item(UwValuePtr map, unsigned index, UwValuePtr key, UwValuePtr valu
 /*
  * Get key-value pair from the map.
  * If `index` is valid return true and write result to key and value.
- * It's the caller's responsibility to destroy returned key-value to avoid memory leaks.
- * The simplest way is passing pointers to UwValue.
  *
  * Example:
  *
