@@ -352,12 +352,15 @@ static inline bool _uw_substring_eq_u8_wrapper(UwValuePtr a, unsigned start_pos,
 
 
 #define uw_startswith(str, prefix) _Generic((prefix), \
+               int: _uw_startswith_c32,  \
+          char32_t: _uw_startswith_c32,  \
              char*: _uw_startswith_u8_wrapper,  \
-          char8_t*: _uw_startswith_u8,          \
-         char32_t*: _uw_startswith_u32,         \
-        UwValuePtr: _uw_startswith              \
+          char8_t*: _uw_startswith_u8,   \
+         char32_t*: _uw_startswith_u32,  \
+        UwValuePtr: _uw_startswith       \
     )((str), (prefix))
 
+bool _uw_startswith_c32 (UwValuePtr str, char32_t   prefix);
 bool  uw_startswith_cstr(UwValuePtr str, char*      prefix);
 bool _uw_startswith_u8  (UwValuePtr str, char8_t*   prefix);
 bool _uw_startswith_u32 (UwValuePtr str, char32_t*  prefix);
@@ -370,12 +373,15 @@ static inline bool _uw_startswith_u8_wrapper(UwValuePtr str, char* prefix)
 
 
 #define uw_endswith(str, suffix) _Generic((suffix), \
+               int: _uw_endswith_c32,  \
+          char32_t: _uw_endswith_c32,  \
              char*: _uw_endswith_u8_wrapper,  \
-          char8_t*: _uw_endswith_u8,          \
-         char32_t*: _uw_endswith_u32,         \
-        UwValuePtr: _uw_endswith              \
+          char8_t*: _uw_endswith_u8,   \
+         char32_t*: _uw_endswith_u32,  \
+        UwValuePtr: _uw_endswith       \
     )((str), (suffix))
 
+bool _uw_endswith_c32 (UwValuePtr str, char32_t   suffix);
 bool  uw_endswith_cstr(UwValuePtr str, char*      suffix);
 bool _uw_endswith_u8  (UwValuePtr str, char8_t*   suffix);
 bool _uw_endswith_u32 (UwValuePtr str, char32_t*  suffix);

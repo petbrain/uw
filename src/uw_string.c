@@ -1498,6 +1498,15 @@ bool _uw_substring_eq(UwValuePtr a, unsigned start_pos, unsigned end_pos, UwValu
     return get_str_methods(a)->equal(_uw_string_char_ptr(a, start_pos), b, 0, end_pos - start_pos);
 }
 
+bool _uw_startswith_c32(UwValuePtr str, char32_t prefix)
+{
+    uw_assert_string(str);
+    unsigned length = _uw_string_length(str);
+    if (length == 0) {
+        return false;
+    }
+    return get_str_methods(str)->get_char(_uw_string_char_ptr(str, 0)) == prefix;
+}
 
 bool uw_startswith_cstr(UwValuePtr str, char* prefix)
 {
@@ -1519,6 +1528,16 @@ bool _uw_startswith(UwValuePtr str, UwValuePtr prefix)
     return _uw_substring_eq(str, 0, uw_strlen(prefix), prefix);
 }
 
+
+bool _uw_endswith_c32(UwValuePtr str, char32_t prefix)
+{
+    uw_assert_string(str);
+    unsigned length = _uw_string_length(str);
+    if (length == 0) {
+        return false;
+    }
+    return get_str_methods(str)->get_char(_uw_string_char_ptr(str, length - 1)) == prefix;
+}
 
 bool  uw_endswith_cstr(UwValuePtr str, char* suffix)
 {
