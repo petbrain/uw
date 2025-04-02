@@ -17,10 +17,12 @@ UW is primarily targeted to 64-bit systems. All values are 128 bit wide.
 
 The basic UW values do not require memory allocation.
 Functions never return pointers to UW value, they always return the whole 128 bit structure.
-But in most cases they accept pointers to values as arguments to make things a bit more efficient.
-Functions do not and should not modify arguments, they treat them as immutable.
+It's the caller's responsibility to destroy values returned by functions.
+The simplest and natural way to do that is assigning them to automatically cleaned
+local variables declared with `UwValue`.
 
-Variables should always be declared using `UwValue` type specifier and initialization clause.
+Generally speaking, variables should always be declared using `UwValue`
+type specifier and initialization clause.
 Such variables are automatically destroyed on scope exit thanks to `gnu::cleanup` attribute.
 Yes, it's a `GNU` extension, but this is supported by `Clang` too.
 Sorry, msvc users.
@@ -33,7 +35,7 @@ Sorry, msvc users.
 }
 ```
 
-If `UwValue` is used in a loop body, always use nested scope (double curly brackets)
+Note, if `UwValue` is used in a loop body, always use nested scope (double curly brackets)
 to run destructors on each iteration:
 ```c
 for (unsigned i = 0, n = uw_list_length(mylist); i < n; i++) {{
@@ -58,6 +60,24 @@ UwResult foo()
     return uw_move(&result);
 }
 ```
+
+Values are passed to functions by reference to make things a bit more efficient.
+Functions do not and should not modify arguments, they treat them as immutable.
+
+There are a few exceptions that accept UW values by value: `UwList()`, `UwMap()`,
+`uw_strcat()`, and `uw_path()`. All they are variadic functions, and they destroy
+their arguments upon return. This is convenient to construct objects
+using function calls only, i.e.
+```
+UwValue my_map = UwMap(
+    UwCharPtr("foo"), get_answer(),
+    UwCharPtr("bar"), UwSigned(42)
+)
+```
+
+but extra care should be taken when passing local variables:
+always use `uw_clone()` for this purpose.
+
 
 ## Type system
 
