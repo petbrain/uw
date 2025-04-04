@@ -369,12 +369,11 @@ static bool compound_equal(UwValuePtr self, UwValuePtr other)
         if (t == UwTypeId_Compound) {
             // basic Compounds are empty and empty always equals empty
             return true;
-        } else {
-            // check base type
-            t = _uw_types[t]->ancestor_id;
-            if (t == UwTypeId_Null) {
-                return false;
-            }
+        }
+        // check base type
+        t = _uw_types[t]->ancestor_id;
+        if (t == UwTypeId_Null) {
+            return false;
         }
     }
 }

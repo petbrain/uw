@@ -218,17 +218,13 @@ static bool bool_equal(UwValuePtr self, UwValuePtr other)
 {
     UwTypeId t = other->type_id;
     for (;;) {
-        switch (t) {
-            case UwTypeId_Bool:
-                return self->bool_value == other->bool_value;
-
-            default: {
-                // check base type
-                t = _uw_types[t]->ancestor_id;
-                if (t == UwTypeId_Null) {
-                    return false;
-                }
-            }
+        if (t == UwTypeId_Bool) {
+            return self->bool_value == other->bool_value;
+        }
+        // check base type
+        t = _uw_types[t]->ancestor_id;
+        if (t == UwTypeId_Null) {
+            return false;
         }
     }
 }

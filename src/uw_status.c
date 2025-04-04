@@ -274,12 +274,11 @@ static bool status_equal(UwValuePtr self, UwValuePtr other)
     for (;;) {
         if (t == UwTypeId_Status) {
             return status_equal_sametype(self, other);
-        } else {
-            // check base type
-            t = _uw_types[t]->ancestor_id;
-            if (t == UwTypeId_Null) {
-                return false;
-            }
+        }
+        // check base type
+        t = _uw_types[t]->ancestor_id;
+        if (t == UwTypeId_Null) {
+            return false;
         }
     }
 }

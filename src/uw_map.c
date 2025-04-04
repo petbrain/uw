@@ -510,12 +510,11 @@ static bool map_equal(UwValuePtr self, UwValuePtr other)
     for (;;) {
         if (t == UwTypeId_Map) {
             return map_eq(get_data_ptr(self), get_data_ptr(other));
-        } else {
-            // check base type
-            t = _uw_types[t]->ancestor_id;
-            if (t == UwTypeId_Null) {
-                return false;
-            }
+        }
+        // check base type
+        t = _uw_types[t]->ancestor_id;
+        if (t == UwTypeId_Null) {
+            return false;
         }
     }
 }
