@@ -571,6 +571,170 @@ static UwType float_type = {
 };
 
 /****************************************************************
+ * DateTime type
+ */
+
+static UwResult datetime_create(UwTypeId type_id, void* ctor_args)
+{
+    // XXX use ctor_args for initializer?
+    return UwDateTime();
+}
+
+static void datetime_hash(UwValuePtr self, UwHashContext* ctx)
+{
+    // mind maps: the hash should be the same for subtypes, that's why not using self->type_id here
+    _uw_hash_uint64(ctx, UwTypeId_DateTime);
+    _uw_hash_uint64(ctx, self->year);
+    _uw_hash_uint64(ctx, self->month);
+    _uw_hash_uint64(ctx, self->day);
+    _uw_hash_uint64(ctx, self->hour);
+    _uw_hash_uint64(ctx, self->minute);
+    _uw_hash_uint64(ctx, self->second);
+    _uw_hash_uint64(ctx, self->nanosecond);
+    _uw_hash_uint64(ctx, self->gmt_offset + (1L << 8 * sizeof(self->gmt_offset)));  // make positive (biased)
+}
+
+static void datetime_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
+{
+    _uw_dump_start(fp, self, first_indent);
+
+    int offset_minutes = self->gmt_offset % 60;
+    if (offset_minutes < 0) {
+        offset_minutes = -offset_minutes;
+    }
+    fprintf(fp, ": %04u-%02u-%02u %02u:%02u:%02u.%u+%02d:%02d\n",
+            self->year, self->month, self->day,
+            self->hour, self->minute, self->second, self->nanosecond,
+            self->gmt_offset / 60, offset_minutes);
+
+}
+
+static UwResult datetime_to_string(UwValuePtr self)
+{
+    return UwError(UW_ERROR_NOT_IMPLEMENTED);
+}
+
+static bool datetime_is_true(UwValuePtr self)
+{
+    return self->year && self->month && self->day
+           && self->hour && self->minute && self->second && self->nanosecond;
+}
+
+static bool datetime_equal_sametype(UwValuePtr self, UwValuePtr other)
+{
+    return self->year       == other->year &&
+           self->month      == other->month &&
+           self->day        == other->day &&
+           self->hour       == other->hour &&
+           self->minute     == other->minute &&
+           self->second     == other->second &&
+           self->nanosecond == other->nanosecond &&
+           self->gmt_offset == other->gmt_offset;
+}
+
+static bool datetime_equal(UwValuePtr self, UwValuePtr other)
+{
+    UwTypeId t = other->type_id;
+    for (;;) {
+        if (t == UwTypeId_DateTime) {
+            return datetime_equal_sametype(self, other);
+        }
+        // check base type
+        t = _uw_types[t]->ancestor_id;
+        if (t == UwTypeId_Null) {
+            return false;
+        }
+    }
+}
+
+static UwType datetime_type = {
+    .id             = UwTypeId_DateTime,
+    .ancestor_id    = UwTypeId_Null,  // no ancestor
+    .name           = "DateTime",
+    .create         = datetime_create,
+    .destroy        = nullptr,
+    .clone          = nullptr,
+    .hash           = datetime_hash,
+    .deepcopy       = datetime_to_string,
+    .dump           = datetime_dump,
+    .to_string      = datetime_to_string,
+    .is_true        = datetime_is_true,
+    .equal_sametype = datetime_equal_sametype,
+    .equal          = datetime_equal
+};
+
+/****************************************************************
+ * Timestamp type
+ */
+
+static UwResult timestamp_create(UwTypeId type_id, void* ctor_args)
+{
+    // XXX use ctor_args for initializer?
+    return UwTimestamp();
+}
+
+static void timestamp_hash(UwValuePtr self, UwHashContext* ctx)
+{
+    // mind maps: the hash should be the same for subtypes, that's why not using self->type_id here
+    _uw_hash_uint64(ctx, UwTypeId_Timestamp);
+    _uw_hash_uint64(ctx, self->ts_seconds);
+    _uw_hash_uint64(ctx, self->ts_nanoseconds);
+}
+
+static void timestamp_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
+{
+    _uw_dump_start(fp, self, first_indent);
+    fprintf(fp, ": %zu.%u\n", self->ts_seconds, self->ts_nanoseconds);
+}
+
+static UwResult timestamp_to_string(UwValuePtr self)
+{
+    return UwError(UW_ERROR_NOT_IMPLEMENTED);
+}
+
+static bool timestamp_is_true(UwValuePtr self)
+{
+    return self->ts_seconds && self->ts_nanoseconds;
+}
+
+static bool timestamp_equal_sametype(UwValuePtr self, UwValuePtr other)
+{
+    return self->ts_seconds == other->ts_seconds
+        && self->ts_nanoseconds == other->ts_nanoseconds;
+}
+
+static bool timestamp_equal(UwValuePtr self, UwValuePtr other)
+{
+    UwTypeId t = other->type_id;
+    for (;;) {
+        if (t == UwTypeId_Timestamp) {
+            return timestamp_equal_sametype(self, other);
+        }
+        // check base type
+        t = _uw_types[t]->ancestor_id;
+        if (t == UwTypeId_Null) {
+            return false;
+        }
+    }
+}
+
+static UwType timestamp_type = {
+    .id             = UwTypeId_Timestamp,
+    .ancestor_id    = UwTypeId_Null,  // no ancestor
+    .name           = "Timestamp",
+    .create         = timestamp_create,
+    .destroy        = nullptr,
+    .clone          = nullptr,
+    .hash           = timestamp_hash,
+    .deepcopy       = timestamp_to_string,
+    .dump           = timestamp_dump,
+    .to_string      = timestamp_to_string,
+    .is_true        = timestamp_is_true,
+    .equal_sametype = timestamp_equal_sametype,
+    .equal          = timestamp_equal
+};
+
+/****************************************************************
  * Pointer type
  */
 
@@ -656,20 +820,22 @@ extern UwType _uw_status_type;    // defined in uw_status.c
 extern UwType _uw_map_type;       // defined in uw_map.c
 
 static UwType* basic_types[] = {
-    [UwTypeId_Null]     = &null_type,
-    [UwTypeId_Bool]     = &bool_type,
-    [UwTypeId_Int]      = &int_type,
-    [UwTypeId_Signed]   = &signed_type,
-    [UwTypeId_Unsigned] = &unsigned_type,
-    [UwTypeId_Float]    = &float_type,
-    [UwTypeId_Ptr]      = &ptr_type,
-    [UwTypeId_CharPtr]  = &_uw_charptr_type,
-    [UwTypeId_String]   = &_uw_string_type,
-    [UwTypeId_Struct]   = &_uw_struct_type,
-    [UwTypeId_Compound] = &_uw_compound_type,
-    [UwTypeId_Status]   = &_uw_status_type,
-    [UwTypeId_Array]    = &_uw_array_type,
-    [UwTypeId_Map]      = &_uw_map_type
+    [UwTypeId_Null]      = &null_type,
+    [UwTypeId_Bool]      = &bool_type,
+    [UwTypeId_Int]       = &int_type,
+    [UwTypeId_Signed]    = &signed_type,
+    [UwTypeId_Unsigned]  = &unsigned_type,
+    [UwTypeId_Float]     = &float_type,
+    [UwTypeId_DateTime]  = &datetime_type,
+    [UwTypeId_Timestamp] = &timestamp_type,
+    [UwTypeId_Ptr]       = &ptr_type,
+    [UwTypeId_CharPtr]   = &_uw_charptr_type,
+    [UwTypeId_String]    = &_uw_string_type,
+    [UwTypeId_Struct]    = &_uw_struct_type,
+    [UwTypeId_Compound]  = &_uw_compound_type,
+    [UwTypeId_Status]    = &_uw_status_type,
+    [UwTypeId_Array]     = &_uw_array_type,
+    [UwTypeId_Map]       = &_uw_map_type
 };
 
 // Miscellaneous interfaces

@@ -165,6 +165,35 @@ union __UwValue {
         uint32_t str_length;
         _UwStringData* string_data;
     };
+
+    struct {
+        // date/time
+        UwTypeId /* uint16_t */ _datetime_type_id;
+        uint16_t year;
+        // -- 32 bits
+        uint8_t month;
+        uint8_t day;
+        uint8_t hour;
+        uint8_t minute;
+        // -- 64 bits
+        uint32_t nanosecond;
+        int16_t gmt_offset;  // in minutes
+        uint8_t second;
+
+        uint8_t tzindex;
+        /* Index in the zone info cache.
+         * If zero, zone info is undefined.
+         */
+    };
+
+    struct {
+        // timestamp
+        UwTypeId /* uint16_t */ _timestamp_type_id;
+        uint16_t _timestamp_padding;
+        uint32_t ts_nanoseconds;
+        uint64_t ts_seconds;
+    };
+
 };
 
 typedef union __UwValue _UwValue;
@@ -209,14 +238,16 @@ typedef _UwValue  UwResult;  // alias for return values
 #define UwTypeId_Signed      3U  // subtype of int, signed integer
 #define UwTypeId_Unsigned    4U  // subtype of int, unsigned integer
 #define UwTypeId_Float       5U
-#define UwTypeId_Ptr         6U  // container for void*
-#define UwTypeId_CharPtr     7U  // container for pointers to static C strings
-#define UwTypeId_String      8U
-#define UwTypeId_Struct      9U  // the base for reference counted data
-#define UwTypeId_Compound   10U  // the base for values that may contain circular references
-#define UwTypeId_Status     11U  // value_data is optional
-#define UwTypeId_Array      12U
-#define UwTypeId_Map        13U
+#define UwTypeId_DateTime    6U
+#define UwTypeId_Timestamp   7U
+#define UwTypeId_Ptr         8U  // container for void*
+#define UwTypeId_CharPtr     9U  // container for pointers to static C strings
+#define UwTypeId_String     10U
+#define UwTypeId_Struct     11U  // the base for reference counted data
+#define UwTypeId_Compound   12U  // the base for values that may contain circular references
+#define UwTypeId_Status     13U  // value_data is optional
+#define UwTypeId_Array      14U
+#define UwTypeId_Map        15U
 
 // char* sub-types
 #define UW_CHARPTR    0
@@ -318,6 +349,8 @@ typedef struct {
 #define uw_is_signed(value)    uw_is_subtype((value), UwTypeId_Signed)
 #define uw_is_unsigned(value)  uw_is_subtype((value), UwTypeId_Unsigned)
 #define uw_is_float(value)     uw_is_subtype((value), UwTypeId_Float)
+#define uw_is_datetime(value)  uw_is_subtype((value), UwTypeId_DateTime)
+#define uw_is_timestamp(value) uw_is_subtype((value), UwTypeId_Timestamp)
 #define uw_is_ptr(value)       uw_is_subtype((value), UwTypeId_Ptr)
 #define uw_is_charptr(value)   uw_is_subtype((value), UwTypeId_CharPtr)
 #define uw_is_string(value)    uw_is_subtype((value), UwTypeId_String)
@@ -335,6 +368,8 @@ typedef struct {
 #define uw_assert_signed(value)    uw_assert(uw_is_signed  (value))
 #define uw_assert_unsigned(value)  uw_assert(uw_is_unsigned(value))
 #define uw_assert_float(value)     uw_assert(uw_is_float   (value))
+#define uw_assert_datetime(value)  uw_assert(uw_is_datetime(value))
+#define uw_assert_timestamp(value) uw_assert(uw_is_timestamp(value))
 #define uw_assert_ptr(value)       uw_assert(uw_is_ptr     (value))
 #define uw_assert_charptr(value)   uw_assert(uw_is_charptr (value))
 #define uw_assert_string(value)    uw_assert(uw_is_string  (value))
@@ -770,6 +805,36 @@ void uw_print_status(FILE* fp, UwValuePtr status);
         v;  \
     })
 
+#define __UWDECL_DateTime(name)  \
+    /* declare DateTime variable */  \
+    _UwValue name = {  \
+        ._datetime_type_id = UwTypeId_DateTime  \
+    }
+
+#define UWDECL_DateTime(name)  _UW_VALUE_CLEANUP __UWDECL_DateTime((name))
+
+#define UwDateTime()  \
+    /* make DateTime rvalue */  \
+    ({  \
+        __UWDECL_DateTime(v);  \
+        v;  \
+    })
+
+#define __UWDECL_Timestamp(name)  \
+    /* declare Timestamp variable */  \
+    _UwValue name = {  \
+        ._timestamp_type_id = UwTypeId_Timestamp  \
+    }
+
+#define UWDECL_Timestamp(name)  _UW_VALUE_CLEANUP __UWDECL_Timestamp((name))
+
+#define UwTimestamp()  \
+    /* make Timestamp rvalue */  \
+    ({  \
+        __UWDECL_Timestamp(v);  \
+        v;  \
+    })
+
 #define __UWDECL_CharPtr(name, initializer)  \
     /* declare CharPtr variable */  \
     _UwValue name = {  \
@@ -836,6 +901,7 @@ void uw_print_status(FILE* fp, UwValuePtr status);
         __UWDECL_Ptr(v, (initializer));  \
         v;  \
     })
+
 
 // Status declarations and rvalues
 

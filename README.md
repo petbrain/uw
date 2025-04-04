@@ -93,19 +93,20 @@ As you might already guess, `ancestor_id` field implies type hierarchy.
 ### UW type hierarchy
 
 ```
-                      UwType
-                        |
-   +------+-----+-------+-----+-------+---------+-------+
-   |      |     |       |     |       |         |       |
-UwNull UwBool UwInt UwFloat UwPtr UwCharPtr UwString UwStruct
-                |                                       |
-           +----+----+         +----------+---------+---+-----+
-           |         |         |          |         |         |
-       UwSigned UwUnsigned  UwStatus  UwStringIO  UwFile  UwCompound
-                                                              |
-                                                       +------+
-                                                       |      |
-                                                    UwArray  UwMap
+                                UwType
+                                  |
+   +------+-----+-------+---------+---------+----------+--------+
+   |      |     |       |         |         |          |        |
+UwNull UwBool UwInt  UwFloat UwDateTime,   UwPtr,   UwString UwStruct
+                |            UwTimestamp  UwCharPtr             |
+                |                                               |
+           +----+----+                 +----------+---------+---+-----+
+           |         |                 |          |         |         |
+       UwSigned UwUnsigned          UwStatus  UwStringIO  UwFile  UwCompound
+                                                                      |
+                                                               +------+
+                                                               |      |
+                                                            UwArray  UwMap
 ```
 
 Integral types `UwNull`, `UwBool`, `UwInt`, `UwFloat`, `UwPtr`, and `UwCharPtr`
