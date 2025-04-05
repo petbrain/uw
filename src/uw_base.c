@@ -594,14 +594,22 @@ static void datetime_dump(UwValuePtr self, FILE* fp, int first_indent, int next_
 {
     _uw_dump_start(fp, self, first_indent);
 
+    // gmt_offset can be negative
+    int offset_hours = self->gmt_offset / 60;
     int offset_minutes = self->gmt_offset % 60;
+    // make sure minutes are positive
     if (offset_minutes < 0) {
         offset_minutes = -offset_minutes;
     }
-    fprintf(fp, ": %04u-%02u-%02u %02u:%02u:%02u.%u+%02d:%02d\n",
+
+    // format fractional part and print &frac[1] later
+    char frac[12];
+    snprintf(frac, sizeof(frac), "%u", self->nanosecond + 1000'000'000);
+
+    fprintf(fp, ": %04u-%02u-%02u %02u:%02u:%02u.%s+%02d:%02d\n",
             self->year, self->month, self->day,
-            self->hour, self->minute, self->second, self->nanosecond,
-            self->gmt_offset / 60, offset_minutes);
+            self->hour, self->minute, self->second, &frac[1],
+            offset_hours, offset_minutes);
 
 }
 
@@ -680,7 +688,12 @@ static void timestamp_hash(UwValuePtr self, UwHashContext* ctx)
 static void timestamp_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
 {
     _uw_dump_start(fp, self, first_indent);
-    fprintf(fp, ": %zu.%u\n", self->ts_seconds, self->ts_nanoseconds);
+
+    // format fractional part and print &frac[1] later
+    char frac[12];
+    snprintf(frac, sizeof(frac), "%u", self->ts_nanoseconds + 1000'000'000);
+
+    fprintf(fp, ": %zu.%s\n", self->ts_seconds, &frac[1]);
 }
 
 static UwResult timestamp_to_string(UwValuePtr self)
