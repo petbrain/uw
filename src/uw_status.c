@@ -182,20 +182,6 @@ static UwResult status_deepcopy(UwValuePtr self)
     return uw_move(&result);
 }
 
-static void status_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
-{
-    _uw_dump_start(fp, self, first_indent);
-
-    if (self->has_status_data) {
-        _uw_dump_struct_data(fp, self);
-    }
-    UwValue desc = _uw_types[UwTypeId_Status]->to_string(self);
-    UW_CSTRING_LOCAL(cdesc, &desc);
-    fputc('\n', fp);
-    fputs(cdesc, fp);
-    fputc('\n', fp);
-}
-
 static UwResult status_to_string(UwValuePtr status)
 {
     if (!status) {
@@ -240,7 +226,7 @@ static UwResult status_to_string(UwValuePtr status)
     }
 
     static char fmt[] = "%s; %s:%u%s";
-    char desc[strlen(fmt) + 16 + strlen(status_str) + strlen(file_name) + errno_length];
+    char desc[sizeof(fmt) + 16 + strlen(status_str) + strlen(file_name) + errno_length];
     unsigned length = snprintf(desc, sizeof(desc), fmt, status_str, file_name, line_number, errno_desc);
 
     UwValue result = uw_create_empty_string(length + description_length + 2, char_size);
@@ -256,6 +242,20 @@ static UwResult status_to_string(UwValuePtr status)
 
 error:
     return UwString_1_12(7, '(', 'e', 'r', 'r', 'o', 'r', ')', 0, 0, 0, 0, 0);
+}
+
+static void status_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
+{
+    _uw_dump_start(fp, self, first_indent);
+
+    if (self->has_status_data) {
+        _uw_dump_struct_data(fp, self);
+    }
+    UwValue desc = status_to_string(self);
+    UW_CSTRING_LOCAL(cdesc, &desc);
+    fputc('\n', fp);
+    fputs(cdesc, fp);
+    fputc('\n', fp);
 }
 
 static bool status_equal_sametype(UwValuePtr self, UwValuePtr other)
