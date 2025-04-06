@@ -699,7 +699,7 @@ bool uw_array_dedent(UwValuePtr lines)
         UwValuePtr line = &array->items[i];
         if (uw_is_string(line)) {
             indent[i] = uw_string_skip_chars(line, 0, indent_chars);
-            if (indent[i] && indent[i] < min_indent) {
+            if (_uw_string_length(line) && indent[i] < min_indent) {
                 min_indent = indent[i];
             }
         } else {
