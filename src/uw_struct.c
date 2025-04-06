@@ -1,5 +1,36 @@
 #include "src/uw_struct_internal.h"
 
+static UwResult call_init(UwValuePtr self, void* ctor_args, UwTypeId type_id)
+{
+    if (type_id == UwTypeId_Struct) {
+        // reached the bottom
+        return UwOK();
+    }
+
+    UwType* type = _uw_types[type_id];
+    UwTypeId ancestor_id = type->ancestor_id;
+
+    UwValue result = call_init(self, ctor_args, ancestor_id);
+    if (uw_ok(&result)) {
+        // initialized all ancestors, okay to call init for this type_id
+        UwMethodInit init = type->init;
+        if (init) {
+            result = init(self, ctor_args);
+            if (uw_error(&result)) {
+                // ancestor init failed, call fini for already called init
+                while (type->id != UwTypeId_Struct) {
+                    UwMethodFini fini = type->fini;
+                    if (fini) {
+                        fini(self);
+                    }
+                    type = uw_ancestor_of(type->id);
+                }
+            }
+        }
+    }
+    return uw_move(&result);
+}
+
 UwResult _uw_struct_alloc(UwValuePtr self, void* ctor_args)
 {
     UwType* type = uw_typeof(self);
@@ -12,22 +43,27 @@ UwResult _uw_struct_alloc(UwValuePtr self, void* ctor_args)
         return UwOOM();
     }
 
-    // call init method
+    self->struct_data->refcount = 1;
 
-    UwValue status = type->init(self, ctor_args);
-    uw_return_if_error(&status);
-    return UwOK();
+    return call_init(self, ctor_args, self->type_id);
 }
 
 void _uw_struct_release(UwValuePtr self)
 {
+    // call fini methods
+
     UwType* type = uw_typeof(self);
-
-    // call fini method
-
-    type->fini(self);
+    while (type->id != UwTypeId_Struct) {
+        UwMethodFini fini = type->fini;
+        if (fini) {
+            fini(self);
+        }
+        type = uw_ancestor_of(type->id);
+    }
 
     // release memory
+
+    type = uw_typeof(self);
 
     unsigned memsize = type->data_offset + type->data_size;
     type->allocator->release((void**) &self->struct_data, memsize);
@@ -128,22 +164,6 @@ bool _uw_struct_equal(UwValuePtr self, UwValuePtr other)
     }
 }
 
-UwResult _uw_struct_init(UwValuePtr self, void* ctor_args)
-{
-    self->struct_data->refcount = 1;
-    return UwOK();
-}
-
-void _uw_struct_fini(UwValuePtr self)
-{
-    // no op
-
-    // Most built-in types, i.e. Status, File, Compound, etc.
-    // are aware it's no op and don't call it.
-
-    // Make sure they'll do if any code will be added here ever.
-}
-
 UwType _uw_struct_type = {
     .id             = UwTypeId_Struct,
     .ancestor_id    = UwTypeId_Null,  // no ancestor
@@ -163,7 +183,4 @@ UwType _uw_struct_type = {
 
     .data_offset    = 0,
     .data_size      = sizeof(_UwStructData),
-
-    .init           = _uw_struct_init,
-    .fini           = _uw_struct_fini
 };

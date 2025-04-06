@@ -332,10 +332,18 @@ typedef struct {
     unsigned data_offset;
     unsigned data_size;
 
-    // struct interface
-    // methods are mandatory
-    UwMethodInit init;  // called by create() to initialize allocated data
-    UwMethodFini fini;  // called by destroy() to finalize allocated data
+    /*
+     * Struct interface
+     *
+     * Methods are optional and can be null.
+     * They are called by _uw_struct_alloc and _uw_struct_release.
+     *
+     * init must be atomic, i.e. allocate either all data or nothing.
+     * If init fails for some subtype, _uw_struct_alloc calls fini method
+     * for already called init in the pedigree.
+     */
+    UwMethodInit init;
+    UwMethodFini fini;
 
     // other interfaces
     unsigned num_interfaces;

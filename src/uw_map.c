@@ -333,27 +333,11 @@ static void map_fini(UwValuePtr self)
 
     struct _UwHashTable* ht = &map->hash_table;
     free_hash_table(self->type_id, ht);
-
-    // call super method, we know the ancestor is Compound
-    _uw_types[UwTypeId_Compound]->fini(self);
-
-    // if we did not knew, then:
-    // uw_ancestor_of(UwTypeId_Map)->fini(self);
 }
 
 static UwResult map_init(UwValuePtr self, void* ctor_args)
 {
     // XXX not using ctor_args for now
-
-    // call super method, we know the ancestor is Compound
-    UwValue status = _uw_types[UwTypeId_Compound]->init(self, ctor_args);
-
-    // if we did not knew, then:
-    // UwValue status = uw_ancestor_of(UwTypeId_Map)->init(self, ctor_args);
-
-    uw_return_if_error(&status);
-
-    // init map
 
     UwValue error = UwOOM();  // default error is OOM unless some arg is a status
 

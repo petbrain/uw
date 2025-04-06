@@ -29,8 +29,6 @@ UwResult _uw_struct_to_string(UwValuePtr self);
 bool     _uw_struct_is_true(UwValuePtr self);
 bool     _uw_struct_equal_sametype(UwValuePtr self, UwValuePtr other);
 bool     _uw_struct_equal(UwValuePtr self, UwValuePtr other);
-UwResult _uw_struct_init(UwValuePtr self, void* ctor_args);
-void     _uw_struct_fini(UwValuePtr self);
 
 #ifdef __cplusplus
 }

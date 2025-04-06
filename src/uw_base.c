@@ -1102,6 +1102,8 @@ UwTypeId _uw_subtype(UwType* type, char* name, UwTypeId ancestor_id,
     UwType* ancestor = _uw_types[ancestor_id];
 
     *type = *ancestor;  // copy type structure
+    type->init = nullptr;
+    type->fini = nullptr;
 
     type->ancestor_id = ancestor_id;
     type->name = name;

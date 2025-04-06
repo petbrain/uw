@@ -287,8 +287,6 @@ static void status_fini(UwValuePtr self)
 {
     if (self->has_status_data) {
         uw_destroy(&self->status_data->description);
-
-        // do not call Struct.fini because it's a no op
     }
 }
 
@@ -311,7 +309,6 @@ UwType _uw_status_type = {
     .data_offset    = sizeof(_UwStructData),
     .data_size      = sizeof(_UwStatusData),
 
-    .init           = _uw_struct_init,
     .fini           = status_fini
 };
 

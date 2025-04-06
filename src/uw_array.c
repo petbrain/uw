@@ -17,27 +17,11 @@ static void panic_status()
 static void array_fini(UwValuePtr self)
 {
     _uw_destroy_array(self->type_id, get_data_ptr(self), self);
-
-    // call super method, we know the ancestor is Compound
-    _uw_types[UwTypeId_Compound]->fini(self);
-
-    // if we did not knew, then:
-    // uw_ancestor_of(UwTypeId_Array)->fini(self);
 }
 
 static UwResult array_init(UwValuePtr self, void* ctor_args)
 {
     // XXX not using ctor_args for now
-
-    // call super method, we know the ancestor is Compound
-    UwValue status = _uw_types[UwTypeId_Compound]->init(self, ctor_args);
-
-    // if we did not knew, then:
-    // UwValue status = uw_ancestor_of(UwTypeId_Array)->init(self, ctor_args);
-
-    uw_return_if_error(&status);
-
-    // allocate array
 
     if (_uw_alloc_array(self->type_id, get_data_ptr(self), UWARRAY_INITIAL_CAPACITY)) {
         return UwOK();

@@ -851,6 +851,7 @@ void test_file()
     char8_t data_filename[] = u8"./test/data/utf8-crossing-buffer-boundary";
 
     UwValue file = uw_file_open(data_filename, O_RDONLY, 0);
+    TEST(uw_ok(&file));
     UwValue status = uw_start_read_lines(&file);
     TEST(uw_ok(&status));
     UwValue line = uw_create_string("");
