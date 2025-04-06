@@ -53,6 +53,12 @@ UwResult _uw_create_string_io(UwValuePtr str)
 
 static UwResult stringio_init(UwValuePtr self, void* ctor_args)
 {
+    // call super method, we know the ancestor is Struct
+    _uw_types[UwTypeId_Struct]->init(self, ctor_args);
+
+    // if we did not knew, then:
+    // uw_ancestor_of(UwTypeId_File)->init(self, ctor_args);
+
     UwStringIOCtorArgs* args = ctor_args;
 
     UwValue str = UwNull();
@@ -75,6 +81,8 @@ static void stringio_fini(UwValuePtr self)
     _UwStringIO* sio = get_data_ptr(self);
     uw_destroy(&sio->line);
     uw_destroy(&sio->pushback);
+
+    // do not call Struct.fini because it's a no op
 }
 
 static UwResult stringio_deepcopy(UwValuePtr self)
@@ -98,6 +106,7 @@ static void stringio_dump(UwValuePtr self, FILE* fp, int first_indent, int next_
     _UwStringIO* sio = get_data_ptr(self);
 
     _uw_dump_start(fp, self, first_indent);
+    _uw_dump_struct_data(fp, self);
     _uw_string_dump_data(fp, &sio->line, next_indent);
 
     _uw_print_indent(fp, next_indent);
