@@ -133,7 +133,9 @@ static UwResult status_create(UwTypeId type_id, void* ctor_args)
 {
     // XXX use ctor_args for initializer?
 
-    return UwOK();
+    UwValue result = UwOK();
+    result.type_id = type_id;
+    return uw_move(&result);
 }
 
 static void status_destroy(UwValuePtr self)
@@ -253,7 +255,7 @@ static void status_dump(UwValuePtr self, FILE* fp, int first_indent, int next_in
     }
     UwValue desc = status_to_string(self);
     UW_CSTRING_LOCAL(cdesc, &desc);
-    fputc('\n', fp);
+    fputc(' ', fp);
     fputs(cdesc, fp);
     fputc('\n', fp);
 }
