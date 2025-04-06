@@ -594,23 +594,27 @@ static void datetime_dump(UwValuePtr self, FILE* fp, int first_indent, int next_
 {
     _uw_dump_start(fp, self, first_indent);
 
-    // gmt_offset can be negative
-    int offset_hours = self->gmt_offset / 60;
-    int offset_minutes = self->gmt_offset % 60;
-    // make sure minutes are positive
-    if (offset_minutes < 0) {
-        offset_minutes = -offset_minutes;
-    }
-
-    // format fractional part and print &frac[1] later
-    char frac[12];
-    snprintf(frac, sizeof(frac), "%u", self->nanosecond + 1000'000'000);
-
-    fprintf(fp, ": %04u-%02u-%02u %02u:%02u:%02u.%s+%02d:%02d\n",
+    fprintf(fp, ": %04u-%02u-%02u %02u:%02u:%02u",
             self->year, self->month, self->day,
-            self->hour, self->minute, self->second, &frac[1],
-            offset_hours, offset_minutes);
+            self->hour, self->minute, self->second);
 
+    if (self->nanosecond) {
+        // format fractional part and print &frac[1] later
+        char frac[12];
+        snprintf(frac, sizeof(frac), "%u", self->nanosecond + 1000'000'000);
+        fputs(&frac[1], fp);
+    }
+    if (self->gmt_offset) {
+        // gmt_offset can be negative
+        int offset_hours = self->gmt_offset / 60;
+        int offset_minutes = self->gmt_offset % 60;
+        // make sure minutes are positive
+        if (offset_minutes < 0) {
+            offset_minutes = -offset_minutes;
+        }
+        fprintf(fp, "%c%02d:%02d", (offset_hours< 0)? '-' : '+', offset_hours, offset_minutes);
+    }
+    fputc('\n', fp);
 }
 
 static UwResult datetime_to_string(UwValuePtr self)
@@ -688,12 +692,14 @@ static void timestamp_hash(UwValuePtr self, UwHashContext* ctx)
 static void timestamp_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
 {
     _uw_dump_start(fp, self, first_indent);
-
-    // format fractional part and print &frac[1] later
-    char frac[12];
-    snprintf(frac, sizeof(frac), "%u", self->ts_nanoseconds + 1000'000'000);
-
-    fprintf(fp, ": %zu.%s\n", self->ts_seconds, &frac[1]);
+    fprintf(fp, ": %zu", self->ts_seconds);
+    if (self->ts_nanoseconds) {
+        // format fractional part and print &frac[1] later
+        char frac[12];
+        snprintf(frac, sizeof(frac), "%u", self->ts_nanoseconds + 1000'000'000);
+        fputs(&frac[1], fp);
+    }
+    fputc('\n', fp);
 }
 
 static UwResult timestamp_to_string(UwValuePtr self)
