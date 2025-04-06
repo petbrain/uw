@@ -48,7 +48,8 @@ typedef int64_t    UwType_Signed;
 typedef uint64_t   UwType_Unsigned;
 typedef double     UwType_Float;
 
-#define UW_SIGNED_MAX  0x7fff'ffff'ffff'ffffL
+#define UW_SIGNED_MAX  0x7fff'ffff'ffff'ffffLL
+#define UW_UNSIGNED_MAX  0xffff'ffff'ffff'ffffULL
 
 typedef struct {
     unsigned refcount;
