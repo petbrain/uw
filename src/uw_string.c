@@ -1563,27 +1563,33 @@ bool _uw_endswith(UwValuePtr str, UwValuePtr suffix)
 }
 
 
-CStringPtr uw_string_to_cstring(UwValuePtr str)
+CStringPtr uw_string_to_utf8(UwValuePtr str)
 {
     uw_assert_string(str);
-    unsigned length = _uw_string_length(str);
 
-    CStringPtr result = malloc(length + 1);
+    CStringPtr result = malloc(uw_strlen_in_utf8(str) + 1);
     if (!result) {
         return nullptr;
     }
-    get_str_methods(str)->copy_to_u8(_uw_string_char_ptr(str, 0), result, length);
+    get_str_methods(str)->copy_to_u8(
+        _uw_string_char_ptr(str, 0),
+        result,
+        _uw_string_length(str)
+    );
     return result;
 }
 
-void uw_strcopy_buf(UwValuePtr str, char* buffer)
+void uw_string_to_utf8_buf(UwValuePtr str, char* buffer)
 {
     uw_assert_string(str);
-    unsigned length = _uw_string_length(str);
-    get_str_methods(str)->copy_to_u8(_uw_string_char_ptr(str, 0), buffer, length);
+    get_str_methods(str)->copy_to_u8(
+        _uw_string_char_ptr(str, 0),
+        buffer,
+        _uw_string_length(str)
+    );
 }
 
-void uw_substrcopy_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos, char* buffer)
+void uw_substr_to_utf8_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos, char* buffer)
 {
     uw_assert_string(str);
     unsigned length = _uw_string_length(str);

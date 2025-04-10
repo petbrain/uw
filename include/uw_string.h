@@ -25,13 +25,13 @@ unsigned uw_strlen(UwValuePtr str);
  * Return length of string.
  */
 
-CStringPtr uw_string_to_cstring(UwValuePtr str);
+CStringPtr uw_string_to_utf8(UwValuePtr str);
 /*
  * Create C string.
  */
 
-void uw_strcopy_buf(UwValuePtr str, char* buffer);
-void uw_substrcopy_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos, char* buffer);
+void uw_string_to_utf8_buf(UwValuePtr str, char* buffer);
+void uw_substr_to_utf8_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos, char* buffer);
 /*
  * Copy string to buffer, appending terminating 0.
  * Use carefully. The caller is responsible to allocate the buffer.

@@ -1140,7 +1140,7 @@ typedef char* CStringPtr;
 // somewhat ugly macro to define a local variable initialized with a copy of uw string:
 #define UW_CSTRING_LOCAL(variable_name, uw_str) \
     char variable_name[uw_strlen_in_utf8(uw_str) + 1]; \
-    uw_strcopy_buf((uw_str), variable_name)
+    uw_string_to_utf8_buf((uw_str), variable_name)
 
 void uw_destroy_cstring(CStringPtr* str);
 
