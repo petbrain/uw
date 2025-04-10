@@ -1103,9 +1103,10 @@ void test_json()
     {
         UwValue result = uw_to_json(&value, 0);
         UwValue reference = uw_create_string(
-            "[\"this\", \"is\", \"a\", {\"number\": 1, \"list\": [\"one\", \"two\", {\"three\": [1, 2, {\"four\": \"five\\nsix\\n\"}]}]}, \"daz good\"]"
+            "[\"this\",\"is\",\"a\",{\"number\":1,\"list\":[\"one\",\"two\",{\"three\":[1,2,{\"four\":\"five\\nsix\\n\"}]}]},\"daz good\"]"
         );
         //uw_dump(stderr, &result);
+        //uw_dump(stderr, &reference);
         //UW_CSTRING_LOCAL(json, &result);
         //fprintf(stderr, "%s\n", json);
         TEST(uw_equal(&result, &reference));
@@ -1136,9 +1137,9 @@ void test_json()
             "    \"daz good\"\n"
             "]"
         );
-//        uw_dump(stderr, &result);
-//        UW_CSTRING_LOCAL(json, &result);
-//        fprintf(stderr, "%s\n", json);
+        //uw_dump(stderr, &result);
+        //UW_CSTRING_LOCAL(json, &result);
+        //fprintf(stderr, "%s\n", json);
         TEST(uw_equal(&result, &reference));
     }
 }

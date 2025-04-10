@@ -178,10 +178,10 @@ static unsigned estimate_array_length(UwValuePtr value, unsigned indent, unsigne
 
     for (unsigned i = 0; i < num_items; i++) {{
         if (i) {
-            length += /* comma and space or line break: */ 2;
+            length += /* comma */ 1;
         }
         if (indent) {
-            length += indent * depth;
+            length += /* line break */ 1 + indent * depth;
         }
         UwValue item = uw_array_item(value, i);
         unsigned item_length = estimate_length(&item, indent, depth + 1, max_char_size);
@@ -201,21 +201,17 @@ static bool array_to_json(UwValuePtr value, unsigned indent, unsigned depth, UwV
     if (!uw_string_append(result, '[')) {
         return false;
     }
-    if (indent) {
-        if (!uw_string_append(result, '\n')) {
-            return false;
-        }
-    }
     unsigned indent_width = indent * depth;
-    char indent_str[indent_width + 1];
-    memset(indent_str, ' ', indent_width);
-    indent_str[indent_width] = 0;
+    char indent_str[indent_width + 2];
+    indent_str[0] = '\n';
+    memset(&indent_str[1], ' ', indent_width);
+    indent_str[indent_width + 1] = 0;
 
     unsigned num_items = uw_array_length(value);
 
     for (unsigned i = 0; i < num_items; i++) {{
         if (i) {
-            if (!uw_string_append(result, indent? ",\n" : ", ")) {
+            if (!uw_string_append(result, ',')) {
                 return false;
             }
         }
@@ -230,10 +226,7 @@ static bool array_to_json(UwValuePtr value, unsigned indent, unsigned depth, UwV
         }
     }}
     if (indent) {
-        if (!uw_string_append(result, '\n')) {
-            return false;
-        }
-        indent_str[indent * (depth - 1)] = 0;  // dedent closing brace
+        indent_str[indent * (depth - 1) + 1] = 0;  // dedent closing brace
         if (!uw_string_append(result, indent_str)) {
             return false;
         }
@@ -254,10 +247,10 @@ static unsigned estimate_map_length(UwValuePtr value, unsigned indent, unsigned 
 
     for (unsigned i = 0; i < num_items; i++) {{
         if (i) {
-            length += /* comma and space or line break: */ 2;
+            length += /* comma */ 1;
         }
         if (indent) {
-            length += indent * depth;
+            length += /* line break */ 1 + indent * depth;
         }
         UwValue k = UwNull();
         UwValue v = UwNull();
@@ -275,7 +268,10 @@ static unsigned estimate_map_length(UwValuePtr value, unsigned indent, unsigned 
         if (v_length == 0) {
             return 0;
         }
-        length += k_length + /* separator and space: */ 2 + v_length;
+        length += k_length + /* separator */ 1 + v_length;
+        if (indent) {
+            length++;  // extra space
+        }
     }}
     if (indent) {
         length += /* line break: */ 1 + /* indent before closing brace */ indent * (depth - 1);
@@ -288,15 +284,11 @@ static bool map_to_json(UwValuePtr value, unsigned indent, unsigned depth, UwVal
     if (!uw_string_append(result, '{')) {
         return false;
     }
-    if (indent) {
-        if (!uw_string_append(result, '\n')) {
-            return false;
-        }
-    }
     unsigned indent_width = indent * depth;
-    char indent_str[indent_width + 1];
-    memset(indent_str, ' ', indent_width);
-    indent_str[indent_width] = 0;
+    char indent_str[indent_width + 2];
+    indent_str[0] = '\n';
+    memset(&indent_str[1], ' ', indent_width);
+    indent_str[indent_width + 1] = 0;
 
     unsigned num_items = uw_map_length(value);
 
@@ -306,7 +298,7 @@ static bool map_to_json(UwValuePtr value, unsigned indent, unsigned depth, UwVal
         uw_map_item(value, i, &k, &v);
 
         if (i) {
-            if (!uw_string_append(result, indent? ",\n" : ", ")) {
+            if (!uw_string_append(result, ',')) {
                 return false;
             }
         }
@@ -325,18 +317,20 @@ static bool map_to_json(UwValuePtr value, unsigned indent, unsigned depth, UwVal
         if (!uw_string_append(result, &escaped)) {
             return false;
         }
-        if (!uw_string_append(result, "\": ")) {
+        if (!uw_string_append(result, "\":")) {
             return false;
+        }
+        if (indent) {
+            if (!uw_string_append(result, ' ')) {
+                return false;
+            }
         }
         if (!value_to_json(&v, indent, depth + 1, result)) {
             return false;
         }
     }}
     if (indent) {
-        if (!uw_string_append(result, '\n')) {
-            return false;
-        }
-        indent_str[indent * (depth - 1)] = 0;  // dedent closing brace
+        indent_str[indent * (depth - 1) + 1] = 0;  // dedent closing brace
         if (!uw_string_append(result, indent_str)) {
             return false;
         }
