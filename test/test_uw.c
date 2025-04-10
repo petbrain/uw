@@ -6,6 +6,7 @@
 #include "include/uw.h"
 #include "include/uw_args.h"
 #include "include/uw_netutils.h"
+#include "include/uw_to_json.h"
 #include "src/uw_string_internal.h"
 
 int num_tests = 0;
@@ -1083,6 +1084,74 @@ void test_args()
     }
 }
 
+void test_json()
+{
+    UwValue value = UwArray(
+        UwString_1_12(4, 't', 'h', 'i', 's', 0,0,0,0,0,0,0,0),
+        UwString_1_12(2, 'i', 's', 0,0,0,0,0,0,0,0,0,0),
+        UwString_1_12(1, 'a', 0,0,0,0,0,0,0,0,0,0,0),
+        UwMap(
+            UwString_1_12(6, 'n', 'u', 'm', 'b', 'e', 'r',0,0,0,0,0,0),
+            UwSigned(1),
+            UwString_1_12(4, 'l', 'i', 's', 't', 0,0,0,0,0,0,0,0),
+            UwArray(
+                UwString_1_12(3, 'o', 'n', 'e', 0,0,0,0,0,0,0,0,0),
+                UwString_1_12(3, 't', 'w', 'o', 0,0,0,0,0,0,0,0,0),
+                UwMap(
+                    UwString_1_12(5, 't', 'h', 'r', 'e', 'e', 0,0,0,0,0,0,0),
+                        UwArray(
+                            UwSigned(1),
+                            UwSigned(2),
+                            UwMap( uw_create_string("four"), uw_create_string("five\nsix\n"))
+                        )
+                )
+            )
+        ),
+        UwString_1_12(8, 'd', 'a', 'z', ' ', 'g', 'o', 'o', 'd', 0,0,0,0)
+    );
+    {
+        UwValue result = uw_to_json(&value, 0);
+        UwValue reference = uw_create_string(
+            "[\"this\", \"is\", \"a\", {\"number\": 1, \"list\": [\"one\", \"two\", {\"three\": [1, 2, {\"four\": \"five\\nsix\\n\"}]}]}, \"daz good\"]"
+        );
+        //uw_dump(stderr, &result);
+        //UW_CSTRING_LOCAL(json, &result);
+        //fprintf(stderr, "%s\n", json);
+        TEST(uw_equal(&result, &reference));
+    }
+    {
+        UwValue result = uw_to_json(&value, 4);
+        UwValue reference = uw_create_string(
+            "[\n"
+            "    \"this\",\n"
+            "    \"is\",\n"
+            "    \"a\",\n"
+            "    {\n"
+            "        \"number\": 1,\n"
+            "        \"list\": [\n"
+            "            \"one\",\n"
+            "            \"two\",\n"
+            "            {\n"
+            "                \"three\": [\n"
+            "                    1,\n"
+            "                    2,\n"
+            "                    {\n"
+            "                        \"four\": \"five\\nsix\\n\"\n"
+            "                    }\n"
+            "                ]\n"
+            "            }\n"
+            "        ]\n"
+            "    },\n"
+            "    \"daz good\"\n"
+            "]"
+        );
+//        uw_dump(stderr, &result);
+//        UW_CSTRING_LOCAL(json, &result);
+//        fprintf(stderr, "%s\n", json);
+        TEST(uw_equal(&result, &reference));
+    }
+}
+
 int main(int argc, char* argv[])
 {
     //debug_allocator.verbose = true;
@@ -1106,6 +1175,7 @@ int main(int argc, char* argv[])
     test_string_io();
     test_netutils();
     test_args();
+    test_json();
 
     clock_gettime(CLOCK_MONOTONIC, &end_time);
     print_timediff(stderr, "time elapsed:", &start_time, &end_time);

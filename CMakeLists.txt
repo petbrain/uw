@@ -28,6 +28,7 @@ add_library(uw STATIC
     src/uw_string.c
     src/uw_string_io.c
     src/uw_struct.c
+    src/uw_to_json.c
 )
 
 target_include_directories(uw PUBLIC . include libpussy)
