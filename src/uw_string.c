@@ -599,8 +599,7 @@ unsigned uw_strlen_in_utf8(UwValuePtr str)
     if (uw_is_charptr(str)) {
         switch (str->charptr_subtype) {
             case UW_CHARPTR:
-            case UW_CHAR8PTR:
-                length = strlen(str->charptr);
+                length = strlen((char*) str->charptr);
                 break;
             case UW_CHAR32PTR: {
                 char32_t* ptr = str->char32ptr;
@@ -676,21 +675,6 @@ int u32_strcmp(char32_t* a, char32_t* b)
     for (;;) {
         char32_t ca = *a++;
         char32_t cb = *b++;
-        if (ca < cb) {
-            return -1;
-        } else if (ca > cb) {
-            return 1;
-        } else if (ca == 0) {
-            return 0;
-        }
-    }
-}
-
-int u32_strcmp_cstr(char32_t* a, char* b)
-{
-    for (;;) {
-        char32_t ca = *a++;
-        unsigned char cb = *b++;
         if (ca < cb) {
             return -1;
         } else if (ca > cb) {
@@ -997,50 +981,43 @@ STR_EQ_IMPL(uint16_t)
 STR_EQ_IMPL(uint24_t)
 STR_EQ_IMPL(uint32_t)
 
-// comparison with C/char32_t null-terminated string, integral `self` types
+// comparison with har32_t null-terminated string, integral `self` types
 
-#define STR_EQ_CU32_IMPL(type_name_self, type_name_other)  \
-    static bool _eq_##type_name_self##_##type_name_other(uint8_t* self_ptr, type_name_other* other, unsigned length)  \
+#define STR_EQ_U32_IMPL(type_name_self)  \
+    static bool _eq_##type_name_self##_char32_t(uint8_t* self_ptr, char32_t* other, unsigned length)  \
     {  \
         type_name_self* this_ptr = (type_name_self*) self_ptr;  \
         while (_likely_(length--)) {  \
-            type_name_other c = *other++;  \
+            char32_t c = *other++;  \
             if (_unlikely_(c == 0)) {  \
                 return false;  \
             }  \
-            if (_unlikely_(((type_name_other) (*this_ptr++)) != c)) {  \
+            if (_unlikely_(*this_ptr++ != c)) {  \
                 return false;  \
             }  \
         }  \
         return *other == 0;  \
     }
 
-STR_EQ_CU32_IMPL(uint8_t,  char)
-STR_EQ_CU32_IMPL(uint16_t, char)
-STR_EQ_CU32_IMPL(uint32_t, char)
-STR_EQ_CU32_IMPL(uint8_t,  char32_t)
-STR_EQ_CU32_IMPL(uint16_t, char32_t)
-STR_EQ_CU32_IMPL(uint32_t, char32_t)
+STR_EQ_U32_IMPL(uint8_t)
+STR_EQ_U32_IMPL(uint16_t)
+STR_EQ_U32_IMPL(uint32_t)
 
-// comparison with C/char32_t null-terminated string, uint24 self type
+// comparison with char32_t null-terminated string, uint24 self type
 
-#define STR_EQ_CU32_S24_IMPL(type_name_other)  \
-    static bool _eq_uint24_t_##type_name_other(uint8_t* self_ptr, type_name_other* other, unsigned length)  \
-    {  \
-        while (_likely_(length--)) {  \
-            type_name_other c = *other++;  \
-            if (_unlikely_(c == 0)) {  \
-                return false;  \
-            }  \
-            if (_unlikely_(((type_name_other) get_char_uint24_t((uint24_t**) &self_ptr)) != c)) {  \
-                return false;  \
-            }  \
-        }  \
-        return *other == 0;  \
+static bool _eq_uint24_t_char32_t(uint8_t* self_ptr, char32_t* other, unsigned length)
+{
+    while (_likely_(length--)) {
+        char32_t c = *other++;
+        if (_unlikely_(c == 0)) {
+            return false;
+        }
+        if (_unlikely_((get_char_uint24_t((uint24_t**) &self_ptr)) != c)) {
+            return false;
+        }
     }
-
-STR_EQ_CU32_S24_IMPL(char)
-STR_EQ_CU32_S24_IMPL(char32_t)
+    return *other == 0;
+}
 
 // Comparison with UTF-8 null-terminated string.
 // Specific checking for invalid codepoint looks unnecessary, but wrong char32_t string may
@@ -1206,15 +1183,15 @@ static void _cp_to_u8_uint24_t(uint8_t* self_ptr, char* dest, unsigned length)
     *dest = 0;
 }
 
-// copy from C/char32_t string, integral `self` types
+// copy from char32_t string, integral `self` types
 
-#define STR_CP_FROM_CSTR_IMPL(type_name_src, type_name_self)  \
-    static unsigned _cp_from_##type_name_src##_##type_name_self(uint8_t* self_ptr, type_name_src* src_ptr, unsigned length)  \
+#define STR_CP_FROM_U32_IMPL(type_name_self)  \
+    static unsigned _cp_from_char32_t_##type_name_self(uint8_t* self_ptr, char32_t* src_ptr, unsigned length)  \
     {  \
         type_name_self* dest_ptr = (type_name_self*) self_ptr;  \
         unsigned chars_copied = 0;  \
         while (_likely_(length--)) {  \
-            type_name_src c = *src_ptr++;  \
+            char32_t c = *src_ptr++;  \
             if (_unlikely_(c == 0)) {  \
                 break;  \
             }  \
@@ -1224,32 +1201,25 @@ static void _cp_to_u8_uint24_t(uint8_t* self_ptr, char* dest, unsigned length)
         return chars_copied;  \
     }
 
-STR_CP_FROM_CSTR_IMPL(char, uint8_t)
-STR_CP_FROM_CSTR_IMPL(char, uint16_t)
-STR_CP_FROM_CSTR_IMPL(char, uint32_t)
-STR_CP_FROM_CSTR_IMPL(char32_t, uint8_t)
-STR_CP_FROM_CSTR_IMPL(char32_t, uint16_t)
-STR_CP_FROM_CSTR_IMPL(char32_t, uint32_t)
+STR_CP_FROM_U32_IMPL(uint8_t)
+STR_CP_FROM_U32_IMPL(uint16_t)
+STR_CP_FROM_U32_IMPL(uint32_t)
 
-// copy from C/char32_t string, uint24 self
+// copy from char32_t string, uint24 self
 
-#define STR_CP_FROM_CSTR24_IMPL(type_name_src)  \
-    static unsigned _cp_from_##type_name_src##_uint24_t(uint8_t* self_ptr, type_name_src* src_ptr, unsigned length)  \
-    {  \
-        unsigned chars_copied = 0;  \
-        while (_likely_(length--)) {  \
-            type_name_src c = *src_ptr++;  \
-            if (_unlikely_(c == 0)) {  \
-                break;  \
-            }  \
-            put_char_uint24_t((uint24_t**) &self_ptr, c);  \
-            chars_copied++;  \
-        }  \
-        return chars_copied;  \
+static unsigned _cp_from_char32_t_uint24_t(uint8_t* self_ptr, char32_t* src_ptr, unsigned length)
+{
+    unsigned chars_copied = 0;
+    while (_likely_(length--)) {
+        char32_t c = *src_ptr++;
+        if (_unlikely_(c == 0)) {
+            break;
+        }
+        put_char_uint24_t((uint24_t**) &self_ptr, c);
+        chars_copied++;
     }
-
-STR_CP_FROM_CSTR24_IMPL(char)
-STR_CP_FROM_CSTR24_IMPL(char32_t)
+    return chars_copied;
+}
 
 // copy from UTF-8_t null-terminated string
 
@@ -1289,25 +1259,25 @@ static unsigned _cp_from_u8_uint24_t(uint8_t* self_ptr, uint8_t* src_ptr, unsign
  * String methods table
  */
 StrMethods _uws_str_methods[4] = {
-    { _get_char_uint8_t,      _put_char_uint8_t,    _hash_uint8_t,             _max_char_size_uint8_t,
-      _eq_uint8_t,            _eq_uint8_t_char,     _eq_uint8_t_char8_t,       _eq_uint8_t_char32_t,
-      _cp_to_uint8_t,         _cp_to_u8_uint8_t,
-      _cp_from_char_uint8_t,  _cp_from_u8_uint8_t,  _cp_from_char32_t_uint8_t
+    { _get_char_uint8_t,    _put_char_uint8_t,    _hash_uint8_t,         _max_char_size_uint8_t,
+      _eq_uint8_t,          _eq_uint8_t_char8_t,  _eq_uint8_t_char32_t,
+      _cp_to_uint8_t,       _cp_to_u8_uint8_t,
+      _cp_from_u8_uint8_t,  _cp_from_char32_t_uint8_t
     },
-    { _get_char_uint16_t,     _put_char_uint16_t,   _hash_uint16_t,            _max_char_size_uint16_t,
-      _eq_uint16_t,           _eq_uint16_t_char,    _eq_uint16_t_char8_t,      _eq_uint16_t_char32_t,
-      _cp_to_uint16_t,        _cp_to_u8_uint16_t,
-      _cp_from_char_uint16_t, _cp_from_u8_uint16_t, _cp_from_char32_t_uint16_t
+    { _get_char_uint16_t,   _put_char_uint16_t,   _hash_uint16_t,        _max_char_size_uint16_t,
+      _eq_uint16_t,         _eq_uint16_t_char8_t, _eq_uint16_t_char32_t,
+      _cp_to_uint16_t,      _cp_to_u8_uint16_t,
+      _cp_from_u8_uint16_t, _cp_from_char32_t_uint16_t
     },
-    { _get_char_uint24_t,     _put_char_uint24_t,   _hash_uint24_t,            _max_char_size_uint24_t,
-      _eq_uint24_t,           _eq_uint24_t_char,    _eq_uint24_t_char8_t,      _eq_uint24_t_char32_t,
-      _cp_to_uint24_t,        _cp_to_u8_uint24_t,
-      _cp_from_char_uint24_t, _cp_from_u8_uint24_t, _cp_from_char32_t_uint24_t
+    { _get_char_uint24_t,   _put_char_uint24_t,   _hash_uint24_t,        _max_char_size_uint24_t,
+      _eq_uint24_t,         _eq_uint24_t_char8_t, _eq_uint24_t_char32_t,
+      _cp_to_uint24_t,      _cp_to_u8_uint24_t,
+      _cp_from_u8_uint24_t, _cp_from_char32_t_uint24_t
     },
-    { _get_char_uint32_t,     _put_char_uint32_t,   _hash_uint32_t,            _max_char_size_uint32_t,
-      _eq_uint32_t,           _eq_uint32_t_char,    _eq_uint32_t_char8_t,      _eq_uint32_t_char32_t,
-      _cp_to_uint32_t,        _cp_to_u8_uint32_t,
-      _cp_from_char_uint32_t, _cp_from_u8_uint32_t, _cp_from_char32_t_uint32_t
+    { _get_char_uint32_t,   _put_char_uint32_t,   _hash_uint32_t,        _max_char_size_uint32_t,
+      _eq_uint32_t,         _eq_uint32_t_char8_t, _eq_uint32_t_char32_t,
+      _cp_to_uint32_t,      _cp_to_u8_uint32_t,
+      _cp_from_u8_uint32_t, _cp_from_char32_t_uint32_t
     }
 };
 
@@ -1346,29 +1316,6 @@ UwResult _uw_create_string(UwValuePtr initializer)
     get_str_methods(initializer)->copy_to(_uw_string_char_ptr(initializer, 0), &result, 0, length);
     _uw_string_set_length(&result, length);
     return uw_move(&result);
-}
-
-UwResult uw_create_string_cstr(char* initializer)
-{
-    unsigned length = 0;
-
-    if (initializer && *initializer == 0) {
-        initializer = nullptr;
-    } else {
-        length = strlen(initializer);
-    }
-
-    // using not autocleaned variable here, no uw_move necessary on exit
-    __UWDECL_String(result);
-
-    if (!make_empty_string(&result, length, 1)) {
-        return UwOOM();
-    }
-    if (initializer) {
-        get_str_methods(&result)->copy_from_cstr(_uw_string_char_ptr(&result, 0), initializer, length);
-        _uw_string_set_length(&result, length);
-    }
-    return result;
 }
 
 UwResult _uw_create_string_u8(char8_t* initializer)
@@ -1446,9 +1393,8 @@ unsigned uw_strlen(UwValuePtr str)
     return get_str_methods(a)->equal_##suffix(_uw_string_char_ptr(a, 0), (type_name_b*) b, _uw_string_length(a));  \
 }
 
-bool  uw_equal_cstr(UwValuePtr a, char* b)     STRING_EQ_IMPL(cstr, char)
-bool _uw_equal_u8  (UwValuePtr a, char8_t* b)  STRING_EQ_IMPL(u8,   char8_t)
-bool _uw_equal_u32 (UwValuePtr a, char32_t* b) STRING_EQ_IMPL(u32,  char32_t)
+bool _uw_equal_u8 (UwValuePtr a, char8_t* b)  STRING_EQ_IMPL(u8,   char8_t)
+bool _uw_equal_u32(UwValuePtr a, char32_t* b) STRING_EQ_IMPL(u32,  char32_t)
 
 #define SUBSTRING_EQ_IMPL(suffix, type_name_b)  \
 {  \
@@ -1468,9 +1414,8 @@ bool _uw_equal_u32 (UwValuePtr a, char32_t* b) STRING_EQ_IMPL(u32,  char32_t)
     return get_str_methods(a)->equal_##suffix(_uw_string_char_ptr(a, start_pos), b, end_pos - start_pos);  \
 }
 
-bool  uw_substring_eq_cstr(UwValuePtr a, unsigned start_pos, unsigned end_pos, char*     b) SUBSTRING_EQ_IMPL(cstr, char)
-bool _uw_substring_eq_u8  (UwValuePtr a, unsigned start_pos, unsigned end_pos, char8_t*  b) SUBSTRING_EQ_IMPL(u8,   char8_t)
-bool _uw_substring_eq_u32 (UwValuePtr a, unsigned start_pos, unsigned end_pos, char32_t* b) SUBSTRING_EQ_IMPL(u32,  char32_t)
+bool _uw_substring_eq_u8 (UwValuePtr a, unsigned start_pos, unsigned end_pos, char8_t*  b) SUBSTRING_EQ_IMPL(u8,  char8_t)
+bool _uw_substring_eq_u32(UwValuePtr a, unsigned start_pos, unsigned end_pos, char32_t* b) SUBSTRING_EQ_IMPL(u32, char32_t)
 
 bool _uw_substring_eq(UwValuePtr a, unsigned start_pos, unsigned end_pos, UwValuePtr b)
 {
@@ -1503,11 +1448,6 @@ bool _uw_startswith_c32(UwValuePtr str, char32_t prefix)
     return get_str_methods(str)->get_char(_uw_string_char_ptr(str, 0)) == prefix;
 }
 
-bool uw_startswith_cstr(UwValuePtr str, char* prefix)
-{
-    return uw_substring_eq_cstr(str, 0, strlen(prefix), prefix);
-}
-
 bool _uw_startswith_u8(UwValuePtr str, char8_t* prefix)
 {
     return _uw_substring_eq_u8(str, 0, utf8_strlen(prefix), prefix);
@@ -1532,13 +1472,6 @@ bool _uw_endswith_c32(UwValuePtr str, char32_t prefix)
         return false;
     }
     return get_str_methods(str)->get_char(_uw_string_char_ptr(str, length - 1)) == prefix;
-}
-
-bool  uw_endswith_cstr(UwValuePtr str, char* suffix)
-{
-    unsigned str_len = uw_strlen(str);
-    unsigned suffix_len = strlen(suffix);
-    return uw_substring_eq_cstr(str, str_len - suffix_len, str_len, suffix);
 }
 
 bool _uw_endswith_u8(UwValuePtr str, char8_t* suffix)
@@ -1617,36 +1550,6 @@ bool _uw_string_append_c32(UwValuePtr dest, char32_t c)
     unsigned length = _uw_string_inc_length(dest, 1);
     get_str_methods(dest)->put_char(_uw_string_char_ptr(dest, length), c);
     return true;
-}
-
-static bool append_cstr(UwValuePtr dest, char* src, unsigned src_len)
-{
-    if (!expand_string(dest, src_len, 1)) {
-        return false;
-    }
-    unsigned dest_length = _uw_string_inc_length(dest, src_len);
-    get_str_methods(dest)->copy_from_cstr(_uw_string_char_ptr(dest, dest_length), src, src_len);
-    return true;
-}
-
-bool uw_string_append_cstr(UwValuePtr dest, char* src)
-{
-    return append_cstr(dest, src, strlen(src));
-}
-
-bool uw_string_append_substring_cstr(UwValuePtr dest, char* src, unsigned src_start_pos, unsigned src_end_pos)
-{
-    unsigned src_len = strlen(src);
-    if (src_end_pos > src_len) {
-        src_end_pos = src_len;
-    }
-    if (src_start_pos >= src_end_pos) {
-        return true;
-    }
-    src_len = src_end_pos - src_start_pos;
-    src += src_start_pos;
-
-    return append_cstr(dest, src, src_len);
 }
 
 static bool append_u8(UwValuePtr dest, char8_t* src, unsigned src_len, uint8_t src_char_size)
@@ -1733,8 +1636,7 @@ bool _uw_string_append(UwValuePtr dest, UwValuePtr src)
     if (uw_is_charptr(src)) {
         switch (src->charptr_subtype) {
             case UW_CHARPTR:
-            case UW_CHAR8PTR:
-                return _uw_string_append_u8(dest, src->char8ptr);
+                return _uw_string_append_u8(dest, src->charptr);
             case UW_CHAR32PTR:
                 return _uw_string_append_u32(dest, src->char32ptr);
             default:
@@ -1799,16 +1701,6 @@ bool uw_string_append_buffer(UwValuePtr dest, uint8_t* buffer, unsigned size)
         strmeth->put_char(ptr++, *buffer++);
     }
     return true;
-}
-
-bool _uw_string_append_charptr(UwValuePtr dest, UwValuePtr charptr, unsigned len, uint8_t char_size)
-{
-    switch (charptr->charptr_subtype) {
-        case UW_CHARPTR:   return append_cstr(dest, charptr->charptr,   len);
-        case UW_CHAR8PTR:  return append_u8  (dest, charptr->char8ptr,  len, char_size);
-        case UW_CHAR32PTR: return append_u32 (dest, charptr->char32ptr, len, char_size);
-        default: return true;  // XXX the caller must ensure charptr_subtype is correct
-    }
 }
 
 bool _uw_string_insert_many_c32(UwValuePtr str, unsigned position, char32_t chr, unsigned n)
@@ -2175,7 +2067,6 @@ UwResult _uw_strcat_ap_v(va_list ap)
     // calculate total length and max char width
     unsigned result_len = 0;
     uint8_t max_char_size = 1;
-    unsigned num_charptrs = 0;
     va_list temp_ap;
     va_copy(temp_ap, ap);
     for (unsigned arg_no = 0;;) {
@@ -2192,15 +2083,17 @@ UwResult _uw_strcat_ap_v(va_list ap)
             _uw_destroy_args(ap);
             return uw_move(&error);
         }
+
+        uint8_t char_size;
         if (uw_is_string(&arg)) {
-            result_len += uw_strlen(&arg);
-            uint8_t char_size = uw_string_char_size(&arg);
-            if (max_char_size < char_size) {
-                max_char_size = char_size;
-            }
+            result_len += _uw_string_length(&arg);
+            char_size = _uw_string_char_size(&arg);
+
         } else if (uw_is_charptr(&arg)) {
-            num_charptrs++;
+            result_len += _uw_charptr_strlen2(&arg, &char_size);
+
         } else {
+            // XXX to_string?
             uw_destroy(&error);
             error = UwError(UW_ERROR_INCOMPATIBLE_TYPE);
             _uw_set_status_desc(&error, "Bad argument %u type for uw_strcat: %u, %s",
@@ -2209,37 +2102,11 @@ UwResult _uw_strcat_ap_v(va_list ap)
             _uw_destroy_args(ap);
             return uw_move(&error);
         }
+        if (max_char_size < char_size) {
+            max_char_size = char_size;
+        }
     }
     va_end(temp_ap);
-
-    // can allocate array for CharPtr now
-    unsigned charptr_len[num_charptrs + 1];
-
-    if (num_charptrs) {
-        // need one more pass to get lengths and char sizes of CharPtr items
-        unsigned charptr_index = 0;
-        va_copy(temp_ap, ap);
-        for (;;) {
-            // arg is not auto-cleaned here because we don't consume it yet
-            _UwValue arg = va_arg(temp_ap, _UwValue);
-            if (uw_va_end(&arg)) {
-                break;
-            }
-            if (uw_is_charptr(&arg)) {
-                num_charptrs++;
-                uint8_t char_size;
-                unsigned len = _uw_charptr_strlen2(&arg, &char_size);
-
-                charptr_len[charptr_index++] = len;
-
-                result_len += len;
-                if (max_char_size < char_size) {
-                    max_char_size = char_size;
-                }
-            }
-        }
-        va_end(temp_ap);
-    }
 
     if (result_len == 0) {
         return UwString();
@@ -2250,21 +2117,13 @@ UwResult _uw_strcat_ap_v(va_list ap)
     uw_return_if_error(&str);
 
     // concatenate
-    unsigned charptr_index = 0;
     for (;;) {{
         UwValue arg = va_arg(ap, _UwValue);
         if (uw_va_end(&arg)) {
             return uw_move(&str);
         }
-        if (uw_is_string(&arg)) {
-            if (!_uw_string_append(&str, &arg)) {
-                break;
-            }
-        } else if (uw_is_charptr(&arg)) {
-            if (!_uw_string_append_charptr(&str, &arg, charptr_len[charptr_index], max_char_size)) {
-                break;
-            }
-            charptr_index++;
+        if (!_uw_string_append(&str, &arg)) {
+            break;
         }
     }}
     _uw_destroy_args(ap);
@@ -2277,7 +2136,6 @@ UwResult _uw_strcat_ap_p(va_list ap)
     // calculate total length and max char width
     unsigned result_len = 0;
     uint8_t max_char_size = 1;
-    unsigned num_charptrs = 0;
     va_list temp_ap;
     va_copy(temp_ap, ap);
     for (unsigned arg_no = 0;;) {
@@ -2286,14 +2144,15 @@ UwResult _uw_strcat_ap_p(va_list ap)
             break;
         }
         arg_no++;
+
+        uint8_t char_size;
         if (uw_is_string(arg)) {
-            result_len += uw_strlen(arg);
-            uint8_t char_size = uw_string_char_size(arg);
-            if (max_char_size < char_size) {
-                max_char_size = char_size;
-            }
+            result_len += _uw_string_length(arg);
+            char_size = _uw_string_char_size(arg);
+
         } else if (uw_is_charptr(arg)) {
-            num_charptrs++;
+            result_len += _uw_charptr_strlen2(arg, &char_size);
+
         } else {
             UwValue error = UwError(UW_ERROR_INCOMPATIBLE_TYPE);
             _uw_set_status_desc(&error, "Bad argument %u type for uw_strcat: %u, %s",
@@ -2301,36 +2160,11 @@ UwResult _uw_strcat_ap_p(va_list ap)
             va_end(temp_ap);
             return uw_move(&error);
         }
+        if (max_char_size < char_size) {
+            max_char_size = char_size;
+        }
     }
     va_end(temp_ap);
-
-    // can allocate array for CharPtr now
-    unsigned charptr_len[num_charptrs + 1];
-
-    if (num_charptrs) {
-        // need one more pass to get lengths and char sizes of CharPtr items
-        unsigned charptr_index = 0;
-        va_copy(temp_ap, ap);
-        for (;;) {
-            UwValuePtr arg = va_arg(temp_ap, UwValuePtr);
-            if (!arg) {
-                break;
-            }
-            if (uw_is_charptr(arg)) {
-                num_charptrs++;
-                uint8_t char_size;
-                unsigned len = _uw_charptr_strlen2(arg, &char_size);
-
-                charptr_len[charptr_index++] = len;
-
-                result_len += len;
-                if (max_char_size < char_size) {
-                    max_char_size = char_size;
-                }
-            }
-        }
-        va_end(temp_ap);
-    }
 
     if (result_len == 0) {
         return UwString();
@@ -2341,21 +2175,13 @@ UwResult _uw_strcat_ap_p(va_list ap)
     uw_return_if_error(&str);
 
     // concatenate
-    unsigned charptr_index = 0;
     for (;;) {{
         UwValuePtr arg = va_arg(ap, UwValuePtr);
         if (!arg) {
             return uw_move(&str);
         }
-        if (uw_is_string(arg)) {
-            if (!_uw_string_append(&str, arg)) {
-                break;
-            }
-        } else if (uw_is_charptr(arg)) {
-            if (!_uw_string_append_charptr(&str, arg, charptr_len[charptr_index], max_char_size)) {
-                break;
-            }
-            charptr_index++;
+        if (!_uw_string_append(&str, arg)) {
+            break;
         }
     }}
     return UwOOM();

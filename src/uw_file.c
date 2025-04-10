@@ -3,7 +3,6 @@
 #include <unistd.h>
 
 #include "include/uw.h"
-#include "src/uw_charptr_internal.h"
 #include "src/uw_struct_internal.h"
 
 typedef struct {

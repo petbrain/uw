@@ -85,13 +85,12 @@ union __UwValue {
     struct {
         // charptr and ptr
         UwTypeId /* uint16_t */ _charptr_type_id;
-        uint8_t charptr_subtype; // see UW_CHARPTR* constants
+        uint8_t charptr_subtype; // see UW_CHAR*PTR constants
         uint8_t  _charptr_padding_1;
         uint32_t _charptr_pagging_2;
         union {
             // C string pointers for UwType_CharPtr
-            char*     charptr;
-            char8_t*  char8ptr;
+            char8_t*  charptr;
             char32_t* char32ptr;
 
             // void*
@@ -235,8 +234,7 @@ typedef _UwValue  UwResult;  // alias for return values
 
 // char* sub-types
 #define UW_CHARPTR    0
-#define UW_CHAR8PTR   1
-#define UW_CHAR32PTR  2
+#define UW_CHAR32PTR  1
 
 /****************************************************************
  * Assertions and panic
@@ -852,7 +850,7 @@ void uw_print_status(FILE* fp, UwValuePtr status);
     _UwValue name = {  \
         ._charptr_type_id = UwTypeId_CharPtr,  \
         .charptr_subtype = UW_CHARPTR,  \
-        .charptr = (initializer)  \
+        .charptr = (char8_t*) (initializer)  \
     }
 
 #define UWDECL_CharPtr(name, initializer)  _UW_VALUE_CLEANUP __UWDECL_CharPtr((name), (initializer))
@@ -861,23 +859,6 @@ void uw_print_status(FILE* fp, UwValuePtr status);
     /* make CharPtr rvalue */  \
     ({  \
         __UWDECL_CharPtr(v, (initializer));  \
-        v;  \
-    })
-
-#define __UWDECL_Char8Ptr(name, initializer)  \
-    /* declare Char8Ptr variable */  \
-    _UwValue name = {  \
-        ._charptr_type_id = UwTypeId_CharPtr,  \
-        .charptr_subtype = UW_CHAR8PTR,  \
-        .char8ptr = (char8_t*) (initializer)  \
-    }
-
-#define UWDECL_Char8Ptr(name, initializer)  _UW_VALUE_CLEANUP __UWDECL_Char8Ptr((name), (initializer))
-
-#define UwChar8Ptr(initializer)  \
-    /* make Char8Ptr rvalue */  \
-    ({  \
-        __UWDECL_Char8Ptr(v, (initializer));  \
         v;  \
     })
 
@@ -1124,7 +1105,7 @@ static inline bool _uwc_equal_longlong  (UwValuePtr a, long long          b) { _
 static inline bool _uwc_equal_ulonglong (UwValuePtr a, unsigned long long b) { __UWDECL_Unsigned (v, b); return _uw_equal(a, &v); }
 static inline bool _uwc_equal_float     (UwValuePtr a, float              b) { __UWDECL_Float    (v, b); return _uw_equal(a, &v); }
 static inline bool _uwc_equal_double    (UwValuePtr a, double             b) { __UWDECL_Float    (v, b); return _uw_equal(a, &v); }
-static inline bool _uwc_equal_u8        (UwValuePtr a, char8_t*           b) { __UWDECL_Char8Ptr (v, b); return _uw_equal(a, &v); }
+static inline bool _uwc_equal_u8        (UwValuePtr a, char8_t*           b) { __UWDECL_CharPtr  (v, b); return _uw_equal(a, &v); }
 static inline bool _uwc_equal_u32       (UwValuePtr a, char32_t*          b) { __UWDECL_Char32Ptr(v, b); return _uw_equal(a, &v); }
 static inline bool _uwc_equal_u8_wrapper(UwValuePtr a, char*              b) { return _uwc_equal_u8(a, (char8_t*) b); }
 

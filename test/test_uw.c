@@ -422,11 +422,6 @@ void test_string()
         // test comparison
         UwValue v2 = uw_create_string("hello pet");
         TEST(uw_equal(&v, &v2));
-        TEST(uw_equal_cstr(&v, "hello pet"));
-        TEST(uw_equal_cstr(&v2, "hello pet"));
-        TEST(!uw_equal_cstr(&v, "hello Pet"));
-        TEST(!uw_equal_cstr(&v2, "hello Pet"));
-        TEST(uw_equal(&v, "hello pet"));
         TEST(uw_equal(&v2, "hello pet"));
         TEST(!uw_equal(&v, "hello Pet"));
         TEST(!uw_equal(&v2, "hello Pet"));
@@ -445,10 +440,6 @@ void test_string()
         TEST(strcmp(cv3, "hello pet") == 0);
 
         // test substring
-        TEST(uw_substring_eq_cstr(&v, 4, 7, "o p"));
-        TEST(!uw_substring_eq_cstr(&v, 4, 7, ""));
-        TEST(uw_substring_eq_cstr(&v, 0, 4, "hell"));
-        TEST(uw_substring_eq_cstr(&v, 7, 100, "et"));
         TEST(uw_substring_eq(&v, 4, 7, "o p"));
         TEST(!uw_substring_eq(&v, 4, 7, ""));
         TEST(uw_substring_eq(&v, 0, 4, "hell"));
@@ -608,7 +599,7 @@ void test_string()
 
     { // test uw_strcat (by value)
         UwValue v = uw_strcat(
-            uw_create_string("Hello! "), UwCharPtr("Thanks"), UwChar32Ptr(U"🙏"), UwChar8Ptr(u8"สวัสดี")
+            uw_create_string("Hello! "), UwCharPtr("Thanks"), UwChar32Ptr(U"🙏"), UwCharPtr(u8"สวัสดี")
         );
         TEST(uw_equal(&v, U"Hello! Thanks🙏สวัสดี"));
         //uw_dump(stderr, &v);
@@ -618,7 +609,7 @@ void test_string()
         UwValue s1 = uw_create_string("Hello! ");
         UwValue s2 = UwCharPtr("Thanks");
         UwValue s3 = UwChar32Ptr(U"🙏");
-        UwValue s4 = UwChar8Ptr(u8"สวัสดี");
+        UwValue s4 = UwCharPtr(u8"สวัสดี");
         UwValue v = uw_strcat(&s1, &s2, &s3, &s4);
         TEST(uw_equal(&v, U"Hello! Thanks🙏สวัสดี"));
         //uw_dump(stderr, &v);
@@ -766,7 +757,7 @@ void test_array()
 
     { // test join with CharPtr
         UwValue array       = UwArray();
-        UwValue sawatdee   = UwChar8Ptr(u8"สวัสดี");
+        UwValue sawatdee   = UwCharPtr(u8"สวัสดี");
         UwValue thanks     = UwCharPtr("Thanks");
         UwValue multsumesc = UwChar32Ptr(U"mulțumesc");
         UwValue wat        = UwChar32Ptr(U"🙏");
@@ -835,7 +826,7 @@ void test_map()
             UwSigned('b'),            UwSigned(-42),
             UwUnsigned(100),          UwSigned(-1000000L),
             UwUnsigned(300000000ULL), UwFloat(1.23),
-            UwChar8Ptr(u8"สวัสดี"),     UwChar32Ptr(U"สบาย"),
+            UwCharPtr(u8"สวัสดี"),      UwChar32Ptr(U"สบาย"),
             UwCharPtr("finally"),     UwMap(UwCharPtr("ok"), UwCharPtr("done"))
         );
         TEST(uw_map_length(&map) == 9);
@@ -883,7 +874,7 @@ void test_file()
         UwValue dirname = uw_dirname(&s);
         //uw_dump(stderr, &dirname);
         TEST(uw_equal(&dirname, "/bin"));
-        UwValue path = uw_path(UwChar8Ptr(""), UwChar8Ptr("bin"), UwChar8Ptr("bash"));
+        UwValue path = uw_path(UwCharPtr(""), UwCharPtr("bin"), UwCharPtr("bash"));
         TEST(uw_equal(&path, "/bin/bash"));
         //uw_dump(stderr, &path);
         UwValue part1 = uw_create_string("");

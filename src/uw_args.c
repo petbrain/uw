@@ -10,7 +10,7 @@ UwResult uw_parse_kvargs(int argc, char* argv[])
 
     // add argv[0] to kwargs
     UwValue zero = UwUnsigned(0);
-    UwValue argv0 = UwChar8Ptr((char8_t*) argv[0]);
+    UwValue argv0 = UwCharPtr((char8_t*) argv[0]);
     if (!uw_map_update(&kwargs, &zero, &argv0)) {
         return UwOOM();
     }

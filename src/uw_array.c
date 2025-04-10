@@ -557,7 +557,7 @@ UwResult _uw_array_join_c32(char32_t separator, UwValuePtr array)
 
 UwResult _uw_array_join_u8(char8_t* separator, UwValuePtr array)
 {
-    UwValue sep = UwChar8Ptr(separator);
+    UwValue sep = UwCharPtr(separator);
     return _uw_array_join(&sep, array);
 }
 
@@ -587,13 +587,14 @@ UwResult _uw_array_join(UwValuePtr separator, UwValuePtr array)
 
     uint8_t max_char_size;
     unsigned separator_len;
-    bool separator_is_string = uw_is_string(separator);
 
-    if (separator_is_string) {
-        max_char_size = uw_string_char_size(separator);
-        separator_len = uw_strlen(separator);
+    if (uw_is_string(separator)) {
+        max_char_size = _uw_string_char_size(separator);
+        separator_len = _uw_string_length(separator);
+
     } if (uw_is_charptr(separator)) {
         separator_len = _uw_charptr_strlen2(separator, &max_char_size);
+
     } else {
         UwValue error = UwError(UW_ERROR_INCOMPATIBLE_TYPE);
         _uw_set_status_desc(&error, "Bad separator type for uw_array_join: %u, %s",
@@ -602,82 +603,43 @@ UwResult _uw_array_join(UwValuePtr separator, UwValuePtr array)
     }
 
     // calculate total length and max char width of string items
-    unsigned num_charptrs = 0;
     unsigned result_len = 0;
     for (unsigned i = 0; i < num_items; i++) {{   // nested scope for autocleaning item
-        UwValue item = uw_array_item(array, i);
-        if (uw_is_string(&item)) {
-            if (i) {
-                result_len += separator_len;
-            }
-            uint8_t char_size = uw_string_char_size(&item);
-            if (max_char_size < char_size) {
-                max_char_size = char_size;
-            }
-            result_len += uw_strlen(&item);
-        } else if (uw_is_charptr(&item)) {
-            if (i) {
-                result_len += separator_len;
-            }
-            num_charptrs++;
+        if (i) {
+            result_len += separator_len;
         }
-        // XXX skipping non-string values
+        UwValue item = uw_array_item(array, i);
+        uint8_t char_size;
+        if (uw_is_string(&item)) {
+            char_size = _uw_string_char_size(&item);
+            result_len += _uw_string_length(&item);
+        } else if (uw_is_charptr(&item)) {
+            result_len += _uw_charptr_strlen2(separator, &char_size);
+        } else {
+            // XXX skipping non-string values
+            continue;
+        }
+        if (max_char_size < char_size) {
+            max_char_size = char_size;
+        }
     }}
-
-    // can allocate array for CharPtr now
-    unsigned charptr_len[num_charptrs + 1];
-
-    if (num_charptrs) {
-        // need one more pass to get lengths and char sizes of CharPtr items
-        unsigned charptr_index = 0;
-        for (unsigned i = 0; i < num_items; i++) {{   // nested scope for autocleaning item
-            UwValue item = uw_array_item(array, i);
-            if (uw_is_charptr(&item)) {
-                uint8_t char_size;
-                unsigned len = _uw_charptr_strlen2(&item, &char_size);
-
-                charptr_len[charptr_index++] = len;
-
-                result_len += len;
-                if (max_char_size < char_size) {
-                    max_char_size = char_size;
-                }
-            }
-        }}
-    }
 
     // join array items
     UwValue result = uw_create_empty_string(result_len, max_char_size);
     uw_return_if_error(&result);
 
-    unsigned charptr_index = 0;
     for (unsigned i = 0; i < num_items; i++) {{   // nested scope for autocleaning item
         UwValue item = uw_array_item(array, i);
-        bool is_string = uw_is_string(&item);
-        if (is_string || uw_is_charptr(&item)) {
+        if (uw_is_string(&item) || uw_is_charptr(&item)) {
             if (i) {
-                if (separator_is_string) {
-                    if (!_uw_string_append(&result, separator)) {
-                        return UwOOM();
-                    }
-                } else {
-                    if (!_uw_string_append_charptr(&result, separator, separator_len, max_char_size)) {
-                        return UwOOM();
-                    }
+                if (!_uw_string_append(&result, separator)) {
+                    return UwOOM();
                 }
             }
-            if (is_string) {
-                if (!_uw_string_append(&result, &item)) {
-                    return UwOOM();
-                }
-            } else {
-                if (!_uw_string_append_charptr(&result, &item, charptr_len[charptr_index], max_char_size)) {
-                    return UwOOM();
-                }
-                charptr_index++;
+            if (!_uw_string_append(&result, &item)) {
+                return UwOOM();
             }
         }
-        // XXX skipping non-string values
     }}
     return uw_move(&result);
 }

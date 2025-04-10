@@ -16,9 +16,8 @@ uint8_t uw_string_char_size(UwValuePtr str);
 // check if `index` is within string length
 #define uw_string_index_valid(str, index) ((index) < uw_strlen(str))
 
-bool  uw_equal_cstr(UwValuePtr a, char* b);
-bool _uw_equal_u8  (UwValuePtr a, char8_t* b);
-bool _uw_equal_u32 (UwValuePtr a, char32_t* b);
+bool _uw_equal_u8 (UwValuePtr a, char8_t* b);
+bool _uw_equal_u32(UwValuePtr a, char32_t* b);
 
 unsigned uw_strlen(UwValuePtr str);
 /*
@@ -135,9 +134,8 @@ unsigned u32_strlen2(char32_t* str, uint8_t* char_size);
  * Find both length of null-terminated `str` and max char size in one go.
  */
 
-int u32_strcmp     (char32_t* a, char32_t* b);
-int u32_strcmp_cstr(char32_t* a, char*     b);
-int u32_strcmp_u8  (char32_t* a, char8_t*  b);
+int u32_strcmp   (char32_t* a, char32_t* b);
+int u32_strcmp_u8(char32_t* a, char8_t*  b);
 /*
  * Compare  null-terminated strings.
  */
@@ -231,10 +229,9 @@ bool uw_string_isdigit(UwValuePtr str);
             UwValuePtr: _uw_create_string             \
     )((initializer))
 
-UwResult  uw_create_string_cstr(char*      initializer);
-UwResult _uw_create_string_u8  (char8_t*   initializer);
-UwResult _uw_create_string_u32 (char32_t*  initializer);
-UwResult _uw_create_string     (UwValuePtr initializer);
+UwResult _uw_create_string_u8 (char8_t*   initializer);
+UwResult _uw_create_string_u32(char32_t*  initializer);
+UwResult _uw_create_string    (UwValuePtr initializer);
 
 static inline UwResult _uw_create_string_u8_wrapper(char* initializer)
 {
@@ -256,11 +253,10 @@ UwResult uw_create_empty_string(unsigned capacity, uint8_t char_size);
             UwValuePtr: _uw_string_append             \
     )((dest), (src))
 
-bool _uw_string_append_c32 (UwValuePtr dest, char32_t   c);
-bool  uw_string_append_cstr(UwValuePtr dest, char*      src);
-bool _uw_string_append_u8  (UwValuePtr dest, char8_t*   src);
-bool _uw_string_append_u32 (UwValuePtr dest, char32_t*  src);
-bool _uw_string_append     (UwValuePtr dest, UwValuePtr src);
+bool _uw_string_append_c32(UwValuePtr dest, char32_t   c);
+bool _uw_string_append_u8 (UwValuePtr dest, char8_t*   src);
+bool _uw_string_append_u32(UwValuePtr dest, char32_t*  src);
+bool _uw_string_append    (UwValuePtr dest, UwValuePtr src);
 
 static inline bool _uw_string_append_u8_wrapper(UwValuePtr dest, char* src)
 {
@@ -309,10 +305,9 @@ bool _uw_string_insert_many_c32(UwValuePtr str, unsigned position, char32_t chr,
             UwValuePtr: _uw_string_append_substring              \
     )((dest), (src), (src_start_pos), (src_end_pos))
 
-bool  uw_string_append_substring_cstr(UwValuePtr dest, char*      src, unsigned src_start_pos, unsigned src_end_pos);
-bool _uw_string_append_substring_u8  (UwValuePtr dest, char8_t*   src, unsigned src_start_pos, unsigned src_end_pos);
-bool _uw_string_append_substring_u32 (UwValuePtr dest, char32_t*  src, unsigned src_start_pos, unsigned src_end_pos);
-bool _uw_string_append_substring     (UwValuePtr dest, UwValuePtr src, unsigned src_start_pos, unsigned src_end_pos);
+bool _uw_string_append_substring_u8 (UwValuePtr dest, char8_t*   src, unsigned src_start_pos, unsigned src_end_pos);
+bool _uw_string_append_substring_u32(UwValuePtr dest, char32_t*  src, unsigned src_start_pos, unsigned src_end_pos);
+bool _uw_string_append_substring    (UwValuePtr dest, UwValuePtr src, unsigned src_start_pos, unsigned src_end_pos);
 
 static inline bool _uw_string_append_substring_u8_wrapper(UwValuePtr dest, char* src, unsigned src_start_pos, unsigned src_end_pos)
 {
@@ -332,10 +327,9 @@ static inline bool _uw_string_append_substring_u8_wrapper(UwValuePtr dest, char*
         UwValuePtr: _uw_substring_eq              \
     )((a), (start_pos), (end_pos), (b))
 
-bool  uw_substring_eq_cstr(UwValuePtr a, unsigned start_pos, unsigned end_pos, char*      b);
-bool _uw_substring_eq_u8  (UwValuePtr a, unsigned start_pos, unsigned end_pos, char8_t*   b);
-bool _uw_substring_eq_u32 (UwValuePtr a, unsigned start_pos, unsigned end_pos, char32_t*  b);
-bool _uw_substring_eq     (UwValuePtr a, unsigned start_pos, unsigned end_pos, UwValuePtr b);
+bool _uw_substring_eq_u8 (UwValuePtr a, unsigned start_pos, unsigned end_pos, char8_t*   b);
+bool _uw_substring_eq_u32(UwValuePtr a, unsigned start_pos, unsigned end_pos, char32_t*  b);
+bool _uw_substring_eq    (UwValuePtr a, unsigned start_pos, unsigned end_pos, UwValuePtr b);
 
 static inline bool _uw_substring_eq_u8_wrapper(UwValuePtr a, unsigned start_pos, unsigned end_pos, char* b)
 {
@@ -352,11 +346,10 @@ static inline bool _uw_substring_eq_u8_wrapper(UwValuePtr a, unsigned start_pos,
         UwValuePtr: _uw_startswith       \
     )((str), (prefix))
 
-bool _uw_startswith_c32 (UwValuePtr str, char32_t   prefix);
-bool  uw_startswith_cstr(UwValuePtr str, char*      prefix);
-bool _uw_startswith_u8  (UwValuePtr str, char8_t*   prefix);
-bool _uw_startswith_u32 (UwValuePtr str, char32_t*  prefix);
-bool _uw_startswith     (UwValuePtr str, UwValuePtr prefix);
+bool _uw_startswith_c32(UwValuePtr str, char32_t   prefix);
+bool _uw_startswith_u8 (UwValuePtr str, char8_t*   prefix);
+bool _uw_startswith_u32(UwValuePtr str, char32_t*  prefix);
+bool _uw_startswith    (UwValuePtr str, UwValuePtr prefix);
 
 static inline bool _uw_startswith_u8_wrapper(UwValuePtr str, char* prefix)
 {
@@ -373,11 +366,10 @@ static inline bool _uw_startswith_u8_wrapper(UwValuePtr str, char* prefix)
         UwValuePtr: _uw_endswith       \
     )((str), (suffix))
 
-bool _uw_endswith_c32 (UwValuePtr str, char32_t   suffix);
-bool  uw_endswith_cstr(UwValuePtr str, char*      suffix);
-bool _uw_endswith_u8  (UwValuePtr str, char8_t*   suffix);
-bool _uw_endswith_u32 (UwValuePtr str, char32_t*  suffix);
-bool _uw_endswith     (UwValuePtr str, UwValuePtr suffix);
+bool _uw_endswith_c32(UwValuePtr str, char32_t   suffix);
+bool _uw_endswith_u8 (UwValuePtr str, char8_t*   suffix);
+bool _uw_endswith_u32(UwValuePtr str, char32_t*  suffix);
+bool _uw_endswith    (UwValuePtr str, UwValuePtr suffix);
 
 static inline bool _uw_endswith_u8_wrapper(UwValuePtr str, char* suffix)
 {
@@ -402,10 +394,9 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
             UwValuePtr: _uw_string_split_any             \
     )((str), (splitters), (maxsplit))
 
-UwResult  uw_string_split_any_cstr(UwValuePtr str, char*      splitters, unsigned maxsplit);
-UwResult _uw_string_split_any_u8  (UwValuePtr str, char8_t*   splitters, unsigned maxsplit);
-UwResult _uw_string_split_any_u32 (UwValuePtr str, char32_t*  splitters, unsigned maxsplit);
-UwResult _uw_string_split_any     (UwValuePtr str, UwValuePtr splitters, unsigned maxsplit);
+UwResult _uw_string_split_any_u8 (UwValuePtr str, char8_t*   splitters, unsigned maxsplit);
+UwResult _uw_string_split_any_u32(UwValuePtr str, char32_t*  splitters, unsigned maxsplit);
+UwResult _uw_string_split_any    (UwValuePtr str, UwValuePtr splitters, unsigned maxsplit);
 
 static inline UwResult _uw_string_split_any_u8_wrapper(UwValuePtr str, char* splitters, unsigned maxsplit)
 {
@@ -421,10 +412,9 @@ static inline UwResult _uw_string_split_any_u8_wrapper(UwValuePtr str, char* spl
             UwValuePtr: _uw_string_split_strict             \
     )((str), (splitter), (maxsplit))
 
-UwResult  uw_string_split_strict_cstr(UwValuePtr str, char*      splitter, unsigned maxsplit);
-UwResult _uw_string_split_strict_u8  (UwValuePtr str, char8_t*   splitter, unsigned maxsplit);
-UwResult _uw_string_split_strict_u32 (UwValuePtr str, char32_t*  splitter, unsigned maxsplit);
-UwResult _uw_string_split_strict     (UwValuePtr str, UwValuePtr splitter, unsigned maxsplit);
+UwResult _uw_string_split_strict_u8 (UwValuePtr str, char8_t*   splitter, unsigned maxsplit);
+UwResult _uw_string_split_strict_u32(UwValuePtr str, char32_t*  splitter, unsigned maxsplit);
+UwResult _uw_string_split_strict    (UwValuePtr str, UwValuePtr splitter, unsigned maxsplit);
 
 static inline UwResult _uw_string_split_strict_u8_wrapper(UwValuePtr str, char* splitter, unsigned maxsplit)
 {

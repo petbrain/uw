@@ -78,7 +78,6 @@ typedef struct {
         UwValuePtr: _uw_create_string_io              \
     )((str))
 
-UwResult _uw_create_string_io_cstr(char* str);
 UwResult _uw_create_string_io_u8  (char8_t* str);
 UwResult _uw_create_string_io_u32 (char32_t* str);
 UwResult _uw_create_string_io     (UwValuePtr str);

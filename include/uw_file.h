@@ -69,8 +69,7 @@ typedef struct {
 
 UwResult _uw_file_open(UwValuePtr file_name, int flags, mode_t mode);
 
-static inline UwResult  uw_file_open_cstr(char*     file_name, int flags, mode_t mode) { __UWDECL_CharPtr  (fname, file_name); return _uw_file_open(&fname, flags, mode); }
-static inline UwResult _uw_file_open_u8  (char8_t*  file_name, int flags, mode_t mode) { __UWDECL_Char8Ptr (fname, file_name); return _uw_file_open(&fname, flags, mode); }
+static inline UwResult _uw_file_open_u8  (char8_t*  file_name, int flags, mode_t mode) { __UWDECL_CharPtr  (fname, file_name); return _uw_file_open(&fname, flags, mode); }
 static inline UwResult _uw_file_open_u32 (char32_t* file_name, int flags, mode_t mode) { __UWDECL_Char32Ptr(fname, file_name); return _uw_file_open(&fname, flags, mode); }
 
 static inline UwResult _uw_file_open_u8_wrapper(char* file_name, int flags, mode_t mode)

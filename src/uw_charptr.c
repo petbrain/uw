@@ -16,10 +16,12 @@ static UwResult charptr_create(UwTypeId type_id, void* ctor_args)
 {
     // XXX use ctor_args for initializer?
 
+    static char8_t emptystr[1] = {0};
+
     _UwValue result = {
         ._charptr_type_id = UwTypeId_CharPtr,
         .charptr_subtype = UW_CHARPTR,
-        .charptr = ""
+        .charptr = emptystr
     };
     return result;
 }
@@ -35,31 +37,7 @@ static void charptr_hash(UwValuePtr self, UwHashContext* ctx)
     switch (self->charptr_subtype) {
         case UW_CHARPTR:
             if (self->charptr) {
-                unsigned char* ptr = (unsigned char*) self->charptr;
-                for (;;) {
-                    union {
-                        struct {
-                            char32_t a;
-                            char32_t b;
-                        };
-                        uint64_t i64;
-                    } data;
-                    data.a = *ptr++;
-                    if (data.a == 0) {
-                        break;
-                    }
-                    data.b = *ptr++;
-                    _uw_hash_uint64(ctx, data.i64);
-                    if (data.b == 0) {
-                        break;
-                    }
-                }
-            }
-            break;
-
-        case UW_CHAR8PTR:
-            if (self->char8ptr) {
-                char8_t* ptr = self->char8ptr;
+                char8_t* ptr = self->charptr;
                 for (;;) {
                     union {
                         struct {
@@ -118,24 +96,8 @@ static void charptr_dump(UwValuePtr self, FILE* fp, int first_indent, int next_i
 
     switch (self->charptr_subtype) {
         case UW_CHARPTR: {
-            fputs("char*: ", fp);
-            char* ptr = self->charptr;
-            for (unsigned i = 0;; i++) {
-                char c = *ptr++;
-                if (c == 0) {
-                    break;
-                }
-                fputc(c, fp);
-                if (i == 80) {
-                    fprintf(fp, "...");
-                    break;
-                }
-            }
-            break;
-        }
-        case UW_CHAR8PTR: {
             fputs("char8_t*: ", fp);
-            char8_t* ptr = self->char8ptr;
+            char8_t* ptr = self->charptr;
             for (unsigned i = 0;; i++) {
                 char32_t c = read_utf8_char(&ptr);
                 if (c == 0) {
@@ -174,8 +136,7 @@ static void charptr_dump(UwValuePtr self, FILE* fp, int first_indent, int next_i
 UwResult uw_charptr_to_string(UwValuePtr self)
 {
     switch (self->charptr_subtype) {
-        case UW_CHARPTR:   return  uw_create_string_cstr(self->charptr);
-        case UW_CHAR8PTR:  return _uw_create_string_u8  (self->char8ptr);
+        case UW_CHARPTR:   return _uw_create_string_u8  (self->charptr);
         case UW_CHAR32PTR: return _uw_create_string_u32 (self->char32ptr);
         default:
             _uw_panic_bad_charptr_subtype(self);
@@ -186,7 +147,6 @@ static bool charptr_is_true(UwValuePtr self)
 {
     switch (self->charptr_subtype) {
         case UW_CHARPTR:   return self->charptr != nullptr && *self->charptr;
-        case UW_CHAR8PTR:  return self->char8ptr != nullptr && *self->char8ptr;
         case UW_CHAR32PTR: return self->char32ptr != nullptr && *self->char32ptr;
         default:
             _uw_panic_bad_charptr_subtype(self);
@@ -202,43 +162,13 @@ static bool charptr_equal_sametype(UwValuePtr self, UwValuePtr other)
                     if (self->charptr == nullptr) {
                         return other->charptr == nullptr;
                     } else {
-                        return strcmp(self->charptr, other->charptr) == 0;
-                    }
-                case UW_CHAR8PTR:
-                    if (self->charptr == nullptr) {
-                        return other->char8ptr == nullptr;
-                    } else {
-                        return strcmp(self->charptr, (char*) other->char8ptr) == 0;
+                        return strcmp((char*) self->charptr, (char*) other->charptr) == 0;
                     }
                 case UW_CHAR32PTR:
-                    if (self->charptr == nullptr) {
+                    if (self->char32ptr == nullptr) {
                         return other->char32ptr == nullptr;
                     } else {
-                        return u32_strcmp_cstr(other->char32ptr, self->charptr) == 0;
-                    }
-                default:
-                    _uw_panic_bad_charptr_subtype(other);;
-            }
-
-        case UW_CHAR8PTR:
-            switch (other->charptr_subtype) {
-                case UW_CHARPTR:
-                    if (self->char8ptr == nullptr) {
-                        return other->charptr == nullptr;
-                    } else {
-                        return strcmp((char*) self->char8ptr, other->charptr) == 0;
-                    }
-                case UW_CHAR8PTR:
-                    if (self->char8ptr == nullptr) {
-                        return other->char8ptr == nullptr;
-                    } else {
-                        return strcmp((char*) self->char8ptr, (char*) other->char8ptr) == 0;
-                    }
-                case UW_CHAR32PTR:
-                    if (self->charptr == nullptr) {
-                        return other->char32ptr == nullptr;
-                    } else {
-                        return u32_strcmp_u8(other->char32ptr, self->char8ptr) == 0;
+                        return u32_strcmp_u8(other->char32ptr, self->charptr) == 0;
                     }
                 default:
                     _uw_panic_bad_charptr_subtype(other);
@@ -250,13 +180,7 @@ static bool charptr_equal_sametype(UwValuePtr self, UwValuePtr other)
                     if (self->char32ptr == nullptr) {
                         return other->charptr == nullptr;
                     } else {
-                        return u32_strcmp_cstr(self->char32ptr, other->charptr) == 0;
-                    }
-                case UW_CHAR8PTR:
-                    if (self->char32ptr == nullptr) {
-                        return other->char8ptr == nullptr;
-                    } else {
-                        return u32_strcmp_u8(self->char32ptr, other->char8ptr) == 0;
+                        return u32_strcmp_u8(self->char32ptr, other->charptr) == 0;
                     }
                 case UW_CHAR32PTR:
                     if (self->char32ptr == nullptr) {
@@ -336,13 +260,7 @@ bool _uw_charptr_equal_string(UwValuePtr charptr, UwValuePtr str)
             if (charptr->charptr == nullptr) {
                 return false;
             } else {
-                return uw_equal_cstr(str, charptr->charptr);
-            }
-        case UW_CHAR8PTR:
-            if (charptr->char8ptr == nullptr) {
-                return false;
-            } else {
-                return _uw_equal_u8(str, charptr->char8ptr);
+                return _uw_equal_u8(str, charptr->charptr);
             }
         case UW_CHAR32PTR:
             if (charptr->char32ptr == nullptr) {
@@ -358,8 +276,7 @@ bool _uw_charptr_equal_string(UwValuePtr charptr, UwValuePtr str)
 unsigned _uw_charptr_strlen2(UwValuePtr charptr, uint8_t* char_size)
 {
     switch (charptr->charptr_subtype) {
-        case UW_CHARPTR:   *char_size = 1; return strlen(charptr->charptr);
-        case UW_CHAR8PTR:  return utf8_strlen2(charptr->char8ptr, char_size);
+        case UW_CHARPTR:   return utf8_strlen2(charptr->charptr, char_size);
         case UW_CHAR32PTR: return u32_strlen2(charptr->char32ptr, char_size);
         default:
             _uw_panic_bad_charptr_subtype(charptr);

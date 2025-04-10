@@ -1,5 +1,4 @@
 #include "include/uw.h"
-#include "src/uw_charptr_internal.h"
 #include "src/uw_string_internal.h"
 #include "src/uw_struct_internal.h"
 
@@ -20,16 +19,9 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line);
  * Constructors
  */
 
-UwResult _uw_create_string_io_cstr(char* str)
-{
-    __UWDECL_CharPtr(v, str);
-    UwStringIOCtorArgs args = { .string = &v };
-    return uw_create2(UwTypeId_StringIO, &args);
-}
-
 UwResult _uw_create_string_io_u8(char8_t* str)
 {
-    __UWDECL_Char8Ptr(v, str);
+    __UWDECL_CharPtr(v, str);
     UwStringIOCtorArgs args = { .string = &v };
     return uw_create2(UwTypeId_StringIO, &args);
 }

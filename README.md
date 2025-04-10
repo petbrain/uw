@@ -118,16 +118,18 @@ to manage that.
 For single-byte character this limit is 12 which is more than double of average
 length of English word.
 
-`UwCharPtr` facilitates work with C strings.
+`UwCharPtr` facilitates work with null-terminated C strings.
 Its `clone` method converts C strings to `UwString` and other types, such as
 array and map, take advantage of that:
 ```c
 UwValue my_map = UwMap(
-    UwChar8Ptr(u8"สวัสดี"), UwChar32Ptr(U"สบาย"),
-    UwCharPtr("let's"),   UwCharPtr("go!")
+    UwCharPtr(u8"สวัสดี"), UwChar32Ptr(U"สบาย"),
+    UwCharPtr("let's"),  UwCharPtr("go!")
 )
 // now my_map contains UW strings only
 ```
+
+`char*` and `char8_t*` are treated equally, as UTF-8 strings.
 
 `Struct` type is the basic type for structured and `Compound` types.
 It handles data allocation and reference counting, although allocated data

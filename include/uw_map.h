@@ -70,7 +70,7 @@ static inline bool _uw_map_has_key_bool    (UwValuePtr map, UwType_Bool     key)
 static inline bool _uw_map_has_key_signed  (UwValuePtr map, UwType_Signed   key) { __UWDECL_Signed   (v, key); return _uw_map_has_key(map, &v); }
 static inline bool _uw_map_has_key_unsigned(UwValuePtr map, UwType_Unsigned key) { __UWDECL_Unsigned (v, key); return _uw_map_has_key(map, &v); }
 static inline bool _uw_map_has_key_float   (UwValuePtr map, UwType_Float    key) { __UWDECL_Float    (v, key); return _uw_map_has_key(map, &v); }
-static inline bool _uw_map_has_key_u8      (UwValuePtr map, char8_t*        key) { __UWDECL_Char8Ptr (v, key); return _uw_map_has_key(map, &v); }
+static inline bool _uw_map_has_key_u8      (UwValuePtr map, char8_t*        key) { __UWDECL_CharPtr  (v, key); return _uw_map_has_key(map, &v); }
 static inline bool _uw_map_has_key_u32     (UwValuePtr map, char32_t*       key) { __UWDECL_Char32Ptr(v, key); return _uw_map_has_key(map, &v); }
 
 static inline bool _uw_map_has_key_u8_wrapper(UwValuePtr map, char* key)
@@ -111,7 +111,7 @@ static inline UwResult _uw_map_get_bool    (UwValuePtr map, UwType_Bool     key)
 static inline UwResult _uw_map_get_signed  (UwValuePtr map, UwType_Signed   key) { __UWDECL_Signed   (v, key); return _uw_map_get(map, &v); }
 static inline UwResult _uw_map_get_unsigned(UwValuePtr map, UwType_Unsigned key) { __UWDECL_Unsigned (v, key); return _uw_map_get(map, &v); }
 static inline UwResult _uw_map_get_float   (UwValuePtr map, UwType_Float    key) { __UWDECL_Float    (v, key); return _uw_map_get(map, &v); }
-static inline UwResult _uw_map_get_u8      (UwValuePtr map, char8_t*        key) { __UWDECL_Char8Ptr (v, key); return _uw_map_get(map, &v); }
+static inline UwResult _uw_map_get_u8      (UwValuePtr map, char8_t*        key) { __UWDECL_CharPtr  (v, key); return _uw_map_get(map, &v); }
 static inline UwResult _uw_map_get_u32     (UwValuePtr map, char32_t*       key) { __UWDECL_Char32Ptr(v, key); return _uw_map_get(map, &v); }
 
 static inline UwResult _uw_map_get_u8_wrapper(UwValuePtr map, char* key)
@@ -153,7 +153,7 @@ static inline bool _uw_map_del_bool    (UwValuePtr map, UwType_Bool     key) { _
 static inline bool _uw_map_del_signed  (UwValuePtr map, UwType_Signed   key) { __UWDECL_Signed   (v, key); return _uw_map_del(map, &v); }
 static inline bool _uw_map_del_unsigned(UwValuePtr map, UwType_Unsigned key) { __UWDECL_Unsigned (v, key); return _uw_map_del(map, &v); }
 static inline bool _uw_map_del_float   (UwValuePtr map, UwType_Float    key) { __UWDECL_Float    (v, key); return _uw_map_del(map, &v); }
-static inline bool _uw_map_del_u8      (UwValuePtr map, char8_t*        key) { __UWDECL_Char8Ptr (v, key); return _uw_map_del(map, &v); }
+static inline bool _uw_map_del_u8      (UwValuePtr map, char8_t*        key) { __UWDECL_CharPtr  (v, key); return _uw_map_del(map, &v); }
 static inline bool _uw_map_del_u32     (UwValuePtr map, char32_t*       key) { __UWDECL_Char32Ptr(v, key); return _uw_map_del(map, &v); }
 
 static inline bool _uw_map_del_u8_wrapper(UwValuePtr map, char* key)

@@ -50,7 +50,7 @@ static inline bool _uw_array_append_bool    (UwValuePtr array, UwType_Bool     i
 static inline bool _uw_array_append_signed  (UwValuePtr array, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_array_append(array, &v); }
 static inline bool _uw_array_append_unsigned(UwValuePtr array, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_array_append(array, &v); }
 static inline bool _uw_array_append_float   (UwValuePtr array, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_array_append(array, &v); }
-static inline bool _uw_array_append_u8      (UwValuePtr array, char8_t*        item) { __UWDECL_Char8Ptr (v, item); return _uw_array_append(array, &v); }
+static inline bool _uw_array_append_u8      (UwValuePtr array, char8_t*        item) { __UWDECL_CharPtr  (v, item); return _uw_array_append(array, &v); }
 static inline bool _uw_array_append_u32     (UwValuePtr array, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_array_append(array, &v); }
 
 static inline bool _uw_array_append_u8_wrapper(UwValuePtr array, char* item)
@@ -111,7 +111,7 @@ static inline bool _uw_array_insert_bool    (UwValuePtr array, unsigned index, U
 static inline bool _uw_array_insert_signed  (UwValuePtr array, unsigned index, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_array_insert(array, index, &v); }
 static inline bool _uw_array_insert_unsigned(UwValuePtr array, unsigned index, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_array_insert(array, index, &v); }
 static inline bool _uw_array_insert_float   (UwValuePtr array, unsigned index, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_array_insert(array, index, &v); }
-static inline bool _uw_array_insert_u8      (UwValuePtr array, unsigned index, char8_t*        item) { __UWDECL_Char8Ptr (v, item); return _uw_array_insert(array, index, &v); }
+static inline bool _uw_array_insert_u8      (UwValuePtr array, unsigned index, char8_t*        item) { __UWDECL_CharPtr  (v, item); return _uw_array_insert(array, index, &v); }
 static inline bool _uw_array_insert_u32     (UwValuePtr array, unsigned index, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_array_insert(array, index, &v); }
 
 static inline bool _uw_array_insert_u8_wrapper(UwValuePtr array, unsigned index, char* item)
