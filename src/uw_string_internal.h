@@ -138,6 +138,48 @@ static inline StrMethods* get_str_methods(UwValuePtr s)
 }
 
 /****************************************************************
+ * Character width functions
+ */
+
+static inline uint8_t update_char_width(uint8_t width, char32_t c)
+/*
+ * Set bits in `width` according to char size.
+ * Return updated `width`.
+ *
+ * This function is used to calculate max charactter size in a string.
+ * The result is converted to char size by char_width_to_char_size()
+ */
+{
+    if (_unlikely_(c >= 16777216)) {
+        return width | 4;
+    }
+    if (_unlikely_(c >= 65536)) {
+        return width | 2;
+    }
+    if (_unlikely_(c >= 256)) {
+        return width | 1;
+    }
+    return width;
+}
+
+static inline uint8_t char_width_to_char_size(uint8_t width)
+/*
+ * Convert `width` bits produced by update_char_width() to char size.
+ */
+{
+    if (width & 4) {
+        return 4;
+    }
+    if (width & 2) {
+        return 3;
+    }
+    if (width & 1) {
+        return 2;
+    }
+    return 1;
+}
+
+/****************************************************************
  * Misc. functions
  */
 

@@ -43,44 +43,6 @@ static inline uint8_t calc_char_size(char32_t c)
     }
 }
 
-static inline uint8_t update_char_width(uint8_t width, char32_t c)
-/*
- * Set bits in `width` according to char size.
- * Return updated `width`.
- *
- * This function is used to calculate max charactter size in a string.
- * The result is converted to char size by char_width_to_char_size()
- */
-{
-    if (_unlikely_(c >= 16777216)) {
-        return width | 4;
-    }
-    if (_unlikely_(c >= 65536)) {
-        return width | 2;
-    }
-    if (_unlikely_(c >= 256)) {
-        return width | 1;
-    }
-    return width;
-}
-
-static inline uint8_t char_width_to_char_size(uint8_t width)
-/*
- * Convert `width` bits produced by update_char_width() to char size.
- */
-{
-    if (width & 4) {
-        return 4;
-    }
-    if (width & 2) {
-        return 3;
-    }
-    if (width & 1) {
-        return 2;
-    }
-    return 1;
-}
-
 static unsigned calc_string_data_size(uint8_t char_size, unsigned desired_capacity, unsigned* real_capacity)
 /*
  * Calculate memory size for string data.
@@ -621,29 +583,57 @@ char8_t* utf8_skip(char8_t* str, unsigned n)
 
 unsigned uw_strlen_in_utf8(UwValuePtr str)
 {
-    uw_assert_string(str);
-    uint8_t char_size = _uw_string_char_size(str);
-
-    StrMethods* strmeth = get_str_methods(str);
-    char8_t* ptr = _uw_string_char_ptr(str, 0);
+#   define INCREMENT_LENGTH  \
+        if (c < 0x80) {  \
+            length++;  \
+        } else if (c < 0b1'00000'000000) {  \
+            length += 2;  \
+        } else if (c < 0b1'0000'000000'000000) {  \
+            length += 3;  \
+        } else {  \
+            length += 4;  \
+        }
 
     unsigned length = 0;
-    unsigned n = _uw_string_length(str);
-    while (n) {
-        char32_t c = strmeth->get_char(ptr);
-        if (c < 0x80) {
-            length++;
-        } else if (c < 0b1'00000'000000) {
-            length += 2;
-        } else if (c < 0b1'0000'000000'000000) {
-            length += 3;
-        } else {
-            length += 4;
+
+    if (uw_is_charptr(str)) {
+        switch (str->charptr_subtype) {
+            case UW_CHARPTR:
+            case UW_CHAR8PTR:
+                length = strlen(str->charptr);
+                break;
+            case UW_CHAR32PTR: {
+                char32_t* ptr = str->char32ptr;
+                for (;;) {
+                    char32_t c = *ptr++;
+                    if (c == 0) {
+                        break;
+                    }
+                    INCREMENT_LENGTH
+                }
+                break;
+            }
+            default:
+                _uw_panic_bad_charptr_subtype(str);
         }
-        ptr += char_size;
-        n--;
+    } else {
+        uw_assert_string(str);
+        uint8_t char_size = _uw_string_char_size(str);
+
+        StrMethods* strmeth = get_str_methods(str);
+        char8_t* ptr = _uw_string_char_ptr(str, 0);
+
+        unsigned n = _uw_string_length(str);
+        while (n) {
+            char32_t c = strmeth->get_char(ptr);
+            INCREMENT_LENGTH
+            ptr += char_size;
+            n--;
+        }
     }
     return length;
+
+#   undef INCREMENT_LENGTH
 }
 
 void _uw_putchar32_utf8(FILE* fp, char32_t codepoint)
@@ -1441,8 +1431,13 @@ uint8_t uw_string_char_size(UwValuePtr str)
 
 unsigned uw_strlen(UwValuePtr str)
 {
-    uw_assert_string(str);
-    return _uw_string_length(str);
+    if (uw_is_charptr(str)) {
+        uint8_t char_size;
+        return _uw_charptr_strlen2(str, &char_size);
+    } else {
+        uw_assert_string(str);
+        return _uw_string_length(str);
+    }
 }
 
 #define STRING_EQ_IMPL(suffix, type_name_b)  \
@@ -1729,9 +1724,21 @@ static bool append_string(UwValuePtr dest, UwValuePtr src, unsigned src_start_po
 
 bool _uw_string_append(UwValuePtr dest, UwValuePtr src)
 {
-    uw_assert_string(src);
-    unsigned src_len = _uw_string_length(src);
-    return append_string(dest, src, 0, src_len);
+    if (uw_is_charptr(src)) {
+        switch (src->charptr_subtype) {
+            case UW_CHARPTR:
+            case UW_CHAR8PTR:
+                return _uw_string_append_u8(dest, src->char8ptr);
+            case UW_CHAR32PTR:
+                return _uw_string_append_u32(dest, src->char32ptr);
+            default:
+                _uw_panic_bad_charptr_subtype(src);
+        }
+    } else {
+        uw_assert_string(src);
+        unsigned src_len = _uw_string_length(src);
+        return append_string(dest, src, 0, src_len);
+    }
 }
 
 bool _uw_string_append_substring(UwValuePtr dest, UwValuePtr src, unsigned src_start_pos, unsigned src_end_pos)

@@ -6,7 +6,7 @@
 #include "src/uw_string_internal.h"
 
 [[noreturn]]
-static void panic_bad_charptr_subtype(UwValuePtr v)
+void _uw_panic_bad_charptr_subtype(UwValuePtr v)
 {
     uw_dump(stderr, v);
     uw_panic("Bad charptr subtype %u\n", v->charptr_subtype);
@@ -106,7 +106,7 @@ static void charptr_hash(UwValuePtr self, UwHashContext* ctx)
             break;
 
         default:
-            panic_bad_charptr_subtype(self);
+            _uw_panic_bad_charptr_subtype(self);
     }
 }
 
@@ -166,7 +166,7 @@ static void charptr_dump(UwValuePtr self, FILE* fp, int first_indent, int next_i
             break;
         }
         default:
-            panic_bad_charptr_subtype(self);
+            _uw_panic_bad_charptr_subtype(self);
     }
     fputc('\n', fp);
 }
@@ -178,7 +178,7 @@ UwResult uw_charptr_to_string(UwValuePtr self)
         case UW_CHAR8PTR:  return _uw_create_string_u8  (self->char8ptr);
         case UW_CHAR32PTR: return _uw_create_string_u32 (self->char32ptr);
         default:
-            panic_bad_charptr_subtype(self);
+            _uw_panic_bad_charptr_subtype(self);
     }
 }
 
@@ -189,7 +189,7 @@ static bool charptr_is_true(UwValuePtr self)
         case UW_CHAR8PTR:  return self->char8ptr != nullptr && *self->char8ptr;
         case UW_CHAR32PTR: return self->char32ptr != nullptr && *self->char32ptr;
         default:
-            panic_bad_charptr_subtype(self);
+            _uw_panic_bad_charptr_subtype(self);
     }
 }
 
@@ -217,7 +217,7 @@ static bool charptr_equal_sametype(UwValuePtr self, UwValuePtr other)
                         return u32_strcmp_cstr(other->char32ptr, self->charptr) == 0;
                     }
                 default:
-                    panic_bad_charptr_subtype(other);;
+                    _uw_panic_bad_charptr_subtype(other);;
             }
 
         case UW_CHAR8PTR:
@@ -241,7 +241,7 @@ static bool charptr_equal_sametype(UwValuePtr self, UwValuePtr other)
                         return u32_strcmp_u8(other->char32ptr, self->char8ptr) == 0;
                     }
                 default:
-                    panic_bad_charptr_subtype(other);
+                    _uw_panic_bad_charptr_subtype(other);
             }
 
         case UW_CHAR32PTR:
@@ -265,11 +265,11 @@ static bool charptr_equal_sametype(UwValuePtr self, UwValuePtr other)
                         return u32_strcmp(self->char32ptr, other->char32ptr) == 0;
                     }
                 default:
-                    panic_bad_charptr_subtype(other);
+                    _uw_panic_bad_charptr_subtype(other);
             }
 
         default:
-            panic_bad_charptr_subtype(self);
+            _uw_panic_bad_charptr_subtype(self);
     }
 }
 
@@ -351,7 +351,7 @@ bool _uw_charptr_equal_string(UwValuePtr charptr, UwValuePtr str)
                 return _uw_equal_u32(str, charptr->char32ptr);
             }
         default:
-            panic_bad_charptr_subtype(charptr);
+            _uw_panic_bad_charptr_subtype(charptr);
     }
 }
 
@@ -362,6 +362,6 @@ unsigned _uw_charptr_strlen2(UwValuePtr charptr, uint8_t* char_size)
         case UW_CHAR8PTR:  return utf8_strlen2(charptr->char8ptr, char_size);
         case UW_CHAR32PTR: return u32_strlen2(charptr->char32ptr, char_size);
         default:
-            panic_bad_charptr_subtype(charptr);
+            _uw_panic_bad_charptr_subtype(charptr);
     }
 }

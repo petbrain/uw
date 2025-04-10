@@ -18,23 +18,6 @@ extern "C" {
 #define UW_LENGTH(array)  (sizeof(array) / sizeof((array)[0]))  // get array length
 
 /****************************************************************
- * Assertions and panic
- *
- * Unlike assertions from standard library they cannot be
- * turned off and can be used for input parameters validation.
- */
-
-#define uw_assert(condition) \
-    ({  \
-        if (!(condition)) {  \
-            uw_panic("UW assertion failed at %s:%s:%d: " #condition "\n", __FILE__, __func__, __LINE__);  \
-        }  \
-    })
-
-[[noreturn]]
-void uw_panic(char* fmt, ...);
-
-/****************************************************************
  * UwValue
  */
 
@@ -256,6 +239,29 @@ typedef _UwValue  UwResult;  // alias for return values
 #define UW_CHAR32PTR  2
 
 /****************************************************************
+ * Assertions and panic
+ *
+ * Unlike assertions from standard library they cannot be
+ * turned off and can be used for input parameters validation.
+ */
+
+#define uw_assert(condition) \
+    ({  \
+        if (!(condition)) {  \
+            uw_panic("UW assertion failed at %s:%s:%d: " #condition "\n", __FILE__, __func__, __LINE__);  \
+        }  \
+    })
+
+[[noreturn]]
+void uw_panic(char* fmt, ...);
+
+[[noreturn]]
+void _uw_panic_bad_charptr_subtype(UwValuePtr v);
+
+[[ noreturn ]]
+void _uw_panic_no_interface(UwTypeId type_id, unsigned interface_id);
+
+/****************************************************************
  * Hash functions
  */
 
@@ -472,9 +478,6 @@ char* uw_get_interface_name(unsigned interface_id);
 /*
  * Get registered interface name by id.
  */
-
-[[ noreturn ]]
-void _uw_panic_no_interface(UwTypeId type_id, unsigned interface_id);
 
 static inline _UwInterface* _uw_lookup_interface(UwTypeId type_id, unsigned interface_id)
 {
