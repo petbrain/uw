@@ -1498,42 +1498,156 @@ bool _uw_endswith(UwValuePtr str, UwValuePtr suffix)
 
 CStringPtr uw_string_to_utf8(UwValuePtr str)
 {
-    uw_assert_string(str);
+    CStringPtr result = nullptr;
 
-    CStringPtr result = malloc(uw_strlen_in_utf8(str) + 1);
-    if (!result) {
-        return nullptr;
+    if (uw_is_charptr(str)) {
+        switch (str->charptr_subtype) {
+            case UW_CHARPTR: {
+                result = malloc(strlen((char*) str) + 1);
+                if (!result) {
+                    return nullptr;
+                }
+                strcpy(result, (char*) str->charptr);
+                break;
+            }
+            case UW_CHAR32PTR: {
+                result = malloc(uw_strlen_in_utf8(str) + 1);
+                if (!result) {
+                    return nullptr;
+                }
+                char32_t* src_ptr = str->char32ptr;
+                char* dest_ptr = result;
+                for(;;) {
+                    char32_t c = *src_ptr++;
+                    if (c == 0) {
+                        break;
+                    }
+                    dest_ptr = uw_char32_to_utf8(c, dest_ptr);
+                }
+                *dest_ptr = 0;
+                break;
+            }
+            default:
+                _uw_panic_bad_charptr_subtype(str);
+        }
+    } else {
+        uw_assert_string(str);
+
+        result = malloc(uw_strlen_in_utf8(str) + 1);
+        if (!result) {
+            return nullptr;
+        }
+        get_str_methods(str)->copy_to_u8(
+            _uw_string_char_ptr(str, 0),
+            result,
+            _uw_string_length(str)
+        );
     }
-    get_str_methods(str)->copy_to_u8(
-        _uw_string_char_ptr(str, 0),
-        result,
-        _uw_string_length(str)
-    );
     return result;
 }
 
 void uw_string_to_utf8_buf(UwValuePtr str, char* buffer)
 {
-    uw_assert_string(str);
-    get_str_methods(str)->copy_to_u8(
-        _uw_string_char_ptr(str, 0),
-        buffer,
-        _uw_string_length(str)
-    );
+    if (uw_is_charptr(str)) {
+        switch (str->charptr_subtype) {
+            case UW_CHARPTR:
+                strcpy(buffer, (char*) str->charptr);
+                return;
+            case UW_CHAR32PTR:
+                for(char32_t* src_ptr = str->char32ptr;;) {
+                    char32_t c = *src_ptr++;
+                    if (c == 0) {
+                        break;
+                    }
+                    buffer = uw_char32_to_utf8(c, buffer);
+                }
+                *buffer = 0;
+                return;
+            default:
+                _uw_panic_bad_charptr_subtype(str);
+        }
+    } else {
+        uw_assert_string(str);
+        get_str_methods(str)->copy_to_u8(
+            _uw_string_char_ptr(str, 0),
+            buffer,
+            _uw_string_length(str)
+        );
+    }
 }
 
 void uw_substr_to_utf8_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos, char* buffer)
 {
-    uw_assert_string(str);
-    unsigned length = _uw_string_length(str);
-    if (end_pos >= length) {
-        end_pos = length;
+    if (uw_is_charptr(str)) {
+        if (start_pos >= end_pos) {
+            *buffer = 0;
+            return;
+        }
+        switch (str->charptr_subtype) {
+            case UW_CHARPTR: {
+                char8_t* src_ptr = str->charptr;
+                unsigned i = 0;
+                for(; i < start_pos; i++) {
+                    char32_t c = read_utf8_char(&src_ptr);
+                    if (_unlikely_(c == 0xFFFFFFFF)) {
+                        continue;
+                    }
+                    if (c == 0) {
+                        *buffer = 0;
+                        return;
+                    }
+                }
+                for(; i < end_pos; i++) {
+                    char32_t c = read_utf8_char(&src_ptr);
+                    if (_unlikely_(c == 0xFFFFFFFF)) {
+                        continue;
+                    }
+                    if (c == 0) {
+                        *buffer = 0;
+                        return;
+                    }
+                    buffer = uw_char32_to_utf8(c, buffer);
+                }
+                *buffer = 0;
+                return;
+            }
+
+            case UW_CHAR32PTR: {
+                char32_t* src_ptr = str->char32ptr;
+                unsigned i = 0;
+                for(; i < start_pos; i++) {
+                    char32_t c = *src_ptr++;
+                    if (c == 0) {
+                        *buffer = 0;
+                        return;
+                    }
+                }
+                for(; i < end_pos; i++) {
+                    char32_t c = *src_ptr++;
+                    if (c == 0) {
+                        *buffer = 0;
+                        return;
+                    }
+                    buffer = uw_char32_to_utf8(c, buffer);
+                }
+                *buffer = 0;
+                return;
+            }
+            default:
+                _uw_panic_bad_charptr_subtype(str);
+        }
+    } else {
+        uw_assert_string(str);
+        unsigned length = _uw_string_length(str);
+        if (end_pos >= length) {
+            end_pos = length;
+        }
+        if (end_pos <= start_pos) {
+            *buffer = 0;
+            return;
+        }
+        get_str_methods(str)->copy_to_u8(_uw_string_char_ptr(str, start_pos), buffer, end_pos - start_pos);
     }
-    if (end_pos <= start_pos) {
-        *buffer = 0;
-        return;
-    }
-    get_str_methods(str)->copy_to_u8(_uw_string_char_ptr(str, start_pos), buffer, end_pos - start_pos);
 }
 
 void uw_destroy_cstring(CStringPtr* str)
