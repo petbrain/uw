@@ -704,7 +704,9 @@ static void timestamp_dump(UwValuePtr self, FILE* fp, int first_indent, int next
 
 static UwResult timestamp_to_string(UwValuePtr self)
 {
-    return UwError(UW_ERROR_NOT_IMPLEMENTED);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%zu.%09u", self->ts_seconds, self->ts_nanoseconds);
+    return uw_create_string(buf);
 }
 
 static bool timestamp_is_true(UwValuePtr self)

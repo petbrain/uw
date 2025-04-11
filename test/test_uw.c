@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
-#include <fcntl.h>
-#include <time.h>
+//#include <fcntl.h>
 
 #include "include/uw.h"
 #include "include/uw_args.h"
+#include "include/uw_datetime.h"
 #include "include/uw_netutils.h"
 #include "include/uw_to_json.h"
 #include "src/uw_string_internal.h"
@@ -26,19 +26,6 @@ bool print_ok = false;
         }  \
         num_tests++;  \
     } while (false)
-
-void print_timediff(FILE* fp, char* caption, struct timespec* start_time, struct timespec* end_time)
-{
-    struct timespec diff;
-
-    diff.tv_sec = end_time->tv_sec - start_time->tv_sec;
-    if (end_time->tv_nsec < start_time->tv_nsec) {
-        diff.tv_sec--;
-        end_time->tv_nsec += 1000'000'000UL;
-    }
-    diff.tv_nsec = end_time->tv_nsec - start_time->tv_nsec;
-    fprintf(fp, "%s %zu.%09zu\n", caption, diff.tv_sec, diff.tv_nsec);
-}
 
 void test_icu()
 {
@@ -1241,8 +1228,7 @@ int main(int argc, char* argv[])
     //pet_allocator.verbose = true;
     init_allocator(&pet_allocator);
 
-    struct timespec start_time, end_time;
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    UwValue start_time = uw_monotonic();
 
     test_icu();
     test_integral_types();
@@ -1255,8 +1241,11 @@ int main(int argc, char* argv[])
     test_args();
     test_json();
 
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    print_timediff(stderr, "time elapsed:", &start_time, &end_time);
+    UwValue end_time = uw_monotonic();
+    UwValue timediff = uw_timestamp_diff(&end_time, &start_time);
+    UwValue timediff_str = uw_to_string(&timediff);
+    UW_CSTRING_LOCAL(timediff_cstr, &timediff_str);
+    fprintf(stderr, "time elapsed: %s", timediff_cstr);
 
     if (num_fail == 0) {
         fprintf(stderr, "%d test%s OK\n", num_tests, (num_tests == 1)? "" : "s");

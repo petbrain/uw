@@ -20,6 +20,7 @@ add_library(uw STATIC
     src/uw_base.c
     src/uw_charptr.c
     src/uw_compound.c
+    src/uw_datetime.c
     src/uw_file.c
     src/uw_hash.c
     src/uw_map.c
