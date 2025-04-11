@@ -344,7 +344,8 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
         }
 
         char8_t* start = f->buffer + f->position;
-        char8_t* lf = (char8_t*) strchr((char*) start, '\n');
+        unsigned n = f->data_size - f->position;
+        char8_t* lf = (char8_t*) memchr((char*) start, '\n', n);
         if (lf) {
             // found line break, don't care about partial UTF-8
             lf++;
@@ -365,7 +366,6 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
             return UwOK();
 
         } else {
-            unsigned n = f->data_size - f->position;
             unsigned bytes_processed;
             if (!uw_string_append_utf8(line, start, n, &bytes_processed)) {
                 return UwOOM();
@@ -381,6 +381,7 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
                 // reached end of file, set EOF state
                 f->position = 0;
                 f->data_size = 0;
+                return UwOK();
             } else {
                 f->position = f->data_size;
             }

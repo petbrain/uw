@@ -893,73 +893,87 @@ void test_file()
 
     // compare line readers
     {
-        UwValue file_name = UwCharPtr("./test/data/sample.json");
+        char* sample_files[] = {
+            "./test/data/sample.json",
+            "./test/data/sample-no-trailing-lf.json"
+        };
+        for (unsigned i = 0; i < UW_LENGTH(sample_files); i++) {{
 
-        UwValue file_size = uw_file_size(&file_name);
-        TEST(uw_is_unsigned(&file_size));
-        if (!uw_is_unsigned(&file_size)) {
-            uw_dump(stderr, &file_size);
-        }
+            UwValue file_name = UwCharPtr(sample_files[i]);
 
-        // read content from file
-
-        char data[file_size.unsigned_value + 1];
-
-        UwValue file = uw_file_open(&file_name, O_RDONLY, 0);
-        TEST(uw_ok(&file));
-
-        unsigned bytes_read;
-        UwValue status = uw_file_read(&file, data, sizeof(data), &bytes_read);
-        TEST(uw_ok(&status));
-        TEST(bytes_read == file_size.unsigned_value);
-        data[file_size.unsigned_value] = 0;
-
-        // reopen file
-        uw_destroy(&file);
-        file = uw_file_open(&file_name, O_RDONLY, 0);
-        TEST(uw_ok(&file));
-
-        // create string IO to compare with
-
-        UwValue str_io = uw_create_string_io(data);
-
-        status = uw_start_read_lines(&file);
-        TEST(uw_ok(&status));
-        status = uw_start_read_lines(&str_io);
-        TEST(uw_ok(&status));
-
-        UwValue line_f = uw_create_string("");
-        UwValue line_s = uw_create_string("");
-        for (;;) {{
-            UwValue status_f = uw_read_line_inplace(&file, &line_f);
-            UwValue status_s = uw_read_line_inplace(&str_io, &line_s);
-            TEST(uw_equal(&status_f, &status_s));
-            if (!uw_equal(&status_f, &status_s)) {
-                fprintf(stderr, "Line number: %u (file), %u (string I/O)\n",
-                        uw_get_line_number(&file),
-                        uw_get_line_number(&str_io)
-                );
-                uw_dump(stderr, &status_f);
-                uw_dump(stderr, &line_f);
-                uw_dump(stderr, &status_s);
-                uw_dump(stderr, &line_s);
-                break;
+            UwValue file_size = uw_file_size(&file_name);
+            TEST(uw_is_unsigned(&file_size));
+            if (!uw_is_unsigned(&file_size)) {
+                uw_dump(stderr, &file_size);
             }
-            if (uw_eof(&status_f)) {
-                break;
-            }
-            TEST(uw_ok(&status_f));
-            if (uw_error(&status_f)) {
-                break;
-            }
-            TEST(uw_equal(&line_f, &line_s));
-            if (!uw_equal(&line_f, &line_s)) {
-                uw_dump(stderr, &line_f);
-                uw_dump(stderr, &line_s);
-                break;
-            }
-            //fprintf(stderr, "Line %u\n", uw_get_line_number(&file));
-            //uw_dump(stderr, &line_f);
+
+            // read content from file
+
+            char data[file_size.unsigned_value + 1];
+            bzero(data, sizeof(data));
+
+            UwValue file = uw_file_open(&file_name, O_RDONLY, 0);
+            TEST(uw_ok(&file));
+
+            unsigned bytes_read;
+            UwValue status = uw_file_read(&file, data, sizeof(data), &bytes_read);
+            TEST(uw_ok(&status));
+            TEST(bytes_read == file_size.unsigned_value);
+            data[file_size.unsigned_value] = 0;
+
+            // reopen file
+            uw_destroy(&file);
+            file = uw_file_open(&file_name, O_RDONLY, 0);
+            TEST(uw_ok(&file));
+
+            // create string IO to compare with
+
+            UwValue str_io = uw_create_string_io(data);
+
+            status = uw_start_read_lines(&file);
+            TEST(uw_ok(&status));
+            status = uw_start_read_lines(&str_io);
+            TEST(uw_ok(&status));
+
+            UwValue line_f = uw_create_string("");
+            UwValue line_s = uw_create_string("");
+            for (;;) {{
+                UwValue status_f = uw_read_line_inplace(&file, &line_f);
+                UwValue status_s = uw_read_line_inplace(&str_io, &line_s);
+                TEST(uw_equal(&status_f, &status_s));
+                if (!uw_equal(&status_f, &status_s)) {
+                    fprintf(stderr, "%s -- Line number: %u (file), %u (string I/O)\n",
+                            sample_files[i],
+                            uw_get_line_number(&file),
+                            uw_get_line_number(&str_io)
+                    );
+                    uw_dump(stderr, &status_f);
+                    uw_dump(stderr, &line_f);
+                    uw_dump(stderr, &status_s);
+                    uw_dump(stderr, &line_s);
+                    break;
+                }
+                if (uw_eof(&status_f)) {
+                    break;
+                }
+                TEST(uw_ok(&status_f));
+                if (uw_error(&status_f)) {
+                    break;
+                }
+                TEST(uw_equal(&line_f, &line_s));
+                if (!uw_equal(&line_f, &line_s)) {
+                    fprintf(stderr, "%s -- Line number: %u (file), %u (string I/O)\n",
+                            sample_files[i],
+                            uw_get_line_number(&file),
+                            uw_get_line_number(&str_io)
+                    );
+                    uw_dump(stderr, &line_f);
+                    uw_dump(stderr, &line_s);
+                    break;
+                }
+                //fprintf(stderr, "Line %u\n", uw_get_line_number(&file));
+                //uw_dump(stderr, &line_f);
+            }}
         }}
     }
 }
