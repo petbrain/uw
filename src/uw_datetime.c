@@ -21,14 +21,12 @@ UwResult uw_timestamp_sum(UwValuePtr a, UwValuePtr b)
 
     __UWDECL_Timestamp(sum);
 
+    sum.ts_seconds = a->ts_seconds + b->ts_seconds;
     sum.ts_nanoseconds = a->ts_nanoseconds - b->ts_nanoseconds;
-    unsigned carry = 0;
     if (sum.ts_nanoseconds >= 1000'000'000UL) {
         sum.ts_nanoseconds -= 1000'000'000UL;
-        carry = 1;
+        sum.ts_seconds++;
     }
-    sum.ts_seconds = a->ts_seconds + b->ts_seconds + carry;
-
     return sum;
 }
 
@@ -40,12 +38,10 @@ UwResult uw_timestamp_diff(UwValuePtr a, UwValuePtr b)
     __UWDECL_Timestamp(diff);
 
     diff.ts_seconds = a->ts_seconds - b->ts_seconds;
-    uint32_t borrow = 0;
+    diff.ts_nanoseconds = a->ts_nanoseconds - b->ts_nanoseconds;
     if (a->ts_nanoseconds < b->ts_nanoseconds) {
         diff.ts_seconds--;
-        borrow = 1000'000'000UL;
+        diff.ts_nanoseconds += 1000'000'000UL;
     }
-    diff.ts_nanoseconds = borrow + a->ts_nanoseconds - b->ts_nanoseconds;
-
     return diff;
 }
