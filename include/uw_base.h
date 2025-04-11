@@ -622,9 +622,10 @@ void uw_dump_types(FILE* fp);
 
 // File errors
 #define UW_ERROR_FILE_ALREADY_OPENED  10
+#define UW_ERROR_NOT_REGULAR_FILE     11
 
 // StringIO errors
-#define UW_ERROR_UNREAD_FAILED        11
+#define UW_ERROR_UNREAD_FAILED        12
 
 uint16_t uw_define_status(char* status);
 /*

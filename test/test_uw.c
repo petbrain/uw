@@ -836,19 +836,20 @@ void test_map()
 
 void test_file()
 {
-    char8_t a[] = u8"###################################################################################################\n";
-    char8_t b[] = u8"##############################################################################################\n";
-    char8_t c[] = u8"สบาย\n";
+    // UTF-8 crossing read boundary
+    {
+        char8_t a[] = u8"###################################################################################################\n";
+        char8_t b[] = u8"##############################################################################################\n";
+        char8_t c[] = u8"สบาย\n";
 
-    char8_t data_filename[] = u8"./test/data/utf8-crossing-buffer-boundary";
+        char8_t data_filename[] = u8"./test/data/utf8-crossing-buffer-boundary";
 
-    UwValue file = uw_file_open(data_filename, O_RDONLY, 0);
-    TEST(uw_ok(&file));
-    UwValue status = uw_start_read_lines(&file);
-    TEST(uw_ok(&status));
-    UwValue line = uw_create_string("");
-    for (;;) {
-        {
+        UwValue file = uw_file_open(data_filename, O_RDONLY, 0);
+        TEST(uw_ok(&file));
+        UwValue status = uw_start_read_lines(&file);
+        TEST(uw_ok(&status));
+        UwValue line = uw_create_string("");
+        for (;;) {{
             UwValue status = uw_read_line_inplace(&file, &line);
             TEST(uw_ok(&status));
             if (uw_error(&status)) {
@@ -857,38 +858,109 @@ void test_file()
             if (!uw_equal(&line, a)) {
                 break;
             }
+        }}
+        TEST(uw_equal(&line, b));
+        {
+            UwValue status = uw_read_line_inplace(&file, &line);
+            TEST(uw_ok(&status));
+        }
+        TEST(uw_equal(&line, c));
+
+        { // test path functions
+            UwValue s = uw_create_string("/bin/bash");
+            UwValue basename = uw_basename(&s);
+            //uw_dump(stderr, &basename);
+            TEST(uw_equal(&basename, "bash"));
+            UwValue dirname = uw_dirname(&s);
+            //uw_dump(stderr, &dirname);
+            TEST(uw_equal(&dirname, "/bin"));
+            UwValue path = uw_path(UwCharPtr(""), UwCharPtr("bin"), UwCharPtr("bash"));
+            TEST(uw_equal(&path, "/bin/bash"));
+            //uw_dump(stderr, &path);
+            UwValue part1 = uw_create_string("");
+            UwValue part2 = uw_create_string("bin");
+            UwValue part3 = uw_create_string("bash");
+            UwValue path2 = uw_path(&part1, &part2, &part3);
+            TEST(uw_equal(&path2, "/bin/bash"));
+
+            UwValue s2 = uw_create_string("blahblahblah");
+            //uw_dump(stderr, &s2);
+            UwValue basename2 = uw_basename(&s2);
+            //uw_dump(stderr, &basename2);
+            TEST(uw_equal(&basename2, "blahblahblah"));
         }
     }
-    TEST(uw_equal(&line, b));
+
+    // compare line readers
     {
-        UwValue status = uw_read_line_inplace(&file, &line);
+        UwValue file_name = UwCharPtr("./test/data/sample.json");
+
+        UwValue file_size = uw_file_size(&file_name);
+        TEST(uw_is_unsigned(&file_size));
+        if (!uw_is_unsigned(&file_size)) {
+            uw_dump(stderr, &file_size);
+        }
+
+        // read content from file
+
+        char data[file_size.unsigned_value + 1];
+
+        UwValue file = uw_file_open(&file_name, O_RDONLY, 0);
+        TEST(uw_ok(&file));
+
+        unsigned bytes_read;
+        UwValue status = uw_file_read(&file, data, sizeof(data), &bytes_read);
         TEST(uw_ok(&status));
-    }
-    TEST(uw_equal(&line, c));
+        TEST(bytes_read == file_size.unsigned_value);
+        data[file_size.unsigned_value] = 0;
 
-    { // test path functions
-        UwValue s = uw_create_string("/bin/bash");
-        UwValue basename = uw_basename(&s);
-        //uw_dump(stderr, &basename);
-        TEST(uw_equal(&basename, "bash"));
-        UwValue dirname = uw_dirname(&s);
-        //uw_dump(stderr, &dirname);
-        TEST(uw_equal(&dirname, "/bin"));
-        UwValue path = uw_path(UwCharPtr(""), UwCharPtr("bin"), UwCharPtr("bash"));
-        TEST(uw_equal(&path, "/bin/bash"));
-        //uw_dump(stderr, &path);
-        UwValue part1 = uw_create_string("");
-        UwValue part2 = uw_create_string("bin");
-        UwValue part3 = uw_create_string("bash");
-        UwValue path2 = uw_path(&part1, &part2, &part3);
-        TEST(uw_equal(&path2, "/bin/bash"));
+        // reopen file
+        uw_destroy(&file);
+        file = uw_file_open(&file_name, O_RDONLY, 0);
+        TEST(uw_ok(&file));
 
-        UwValue s2 = uw_create_string("blahblahblah");
-        //uw_dump(stderr, &s2);
-        UwValue basename2 = uw_basename(&s2);
-        //uw_dump(stderr, &basename2);
-        TEST(uw_equal(&basename2, "blahblahblah"));
+        // create string IO to compare with
 
+        UwValue str_io = uw_create_string_io(data);
+
+        status = uw_start_read_lines(&file);
+        TEST(uw_ok(&status));
+        status = uw_start_read_lines(&str_io);
+        TEST(uw_ok(&status));
+
+        UwValue line_f = uw_create_string("");
+        UwValue line_s = uw_create_string("");
+        for (;;) {{
+            UwValue status_f = uw_read_line_inplace(&file, &line_f);
+            UwValue status_s = uw_read_line_inplace(&str_io, &line_s);
+            TEST(uw_equal(&status_f, &status_s));
+            if (!uw_equal(&status_f, &status_s)) {
+                fprintf(stderr, "Line number: %u (file), %u (string I/O)\n",
+                        uw_get_line_number(&file),
+                        uw_get_line_number(&str_io)
+                );
+                uw_dump(stderr, &status_f);
+                uw_dump(stderr, &line_f);
+                uw_dump(stderr, &status_s);
+                uw_dump(stderr, &line_s);
+                break;
+            }
+            if (uw_eof(&status_f)) {
+                break;
+            }
+            TEST(uw_ok(&status_f));
+            if (uw_error(&status_f)) {
+                break;
+            }
+            TEST(uw_equal(&line_f, &line_s));
+            if (!uw_equal(&line_f, &line_s)) {
+                uw_dump(stderr, &line_f);
+                uw_dump(stderr, &line_s);
+                break;
+            }
+            //fprintf(stderr, "Line %u\n", uw_get_line_number(&file));
+            //uw_dump(stderr, &line_f);
+        }}
     }
 }
 

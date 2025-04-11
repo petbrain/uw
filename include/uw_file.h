@@ -94,6 +94,16 @@ static inline UwResult uw_file_write(UwValuePtr file, void* data, unsigned size,
 
 
 /****************************************************************
+ * Miscellaneous functions
+ */
+
+UwResult uw_file_size(UwValuePtr file_name);
+/*
+ * Return file size as Unsigned or Status if error.
+ */
+
+
+/****************************************************************
  * Path functions, probably should be separated
  */
 

@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "include/uw.h"
@@ -291,7 +292,7 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
     }
 
     if ( ! (f->position || f->data_size)) {
-        // EOF condition
+        // EOF state
         // XXX warn if f->partial_utf8_len != 0
         return UwError(UW_ERROR_EOF);
     }
@@ -300,22 +301,17 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
         if (f->position == f->data_size) {
 
             // reached end of data scanning for line break
+
+            f->position = 0;
+
             // read next chunk of file
             {
                 UwValue status = file_read(self, f->buffer, LINE_READER_BUFFER_SIZE, &f->data_size);
                 uw_return_if_error(&status);
-
                 if (f->data_size == 0) {
-                    if (f->position) {
-                        // last line without line break
-                        // data_size is zero, reset position for EOF condition
-                        f->position = 0;
-                        return UwOK();
-                    }
-                    uw_panic("Line reader in bad state\n");
+                    return UwError(UW_ERROR_EOF);
                 }
             }
-            f->position = 0;
 
             if (f->partial_utf8_len) {
                 // process partial UTF-8 sequence
@@ -358,7 +354,13 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
             if (!uw_string_append_utf8(line, start, end_pos - f->position, &bytes_processed)) {
                 return UwOOM();
             }
-            f->position = end_pos;
+            if (end_pos < f->data_size) {
+                f->position = end_pos;
+            } else if (f->data_size < LINE_READER_BUFFER_SIZE) {
+                // reached end of file, set EOF state
+                f->position = 0;
+                f->data_size = 0;
+            }
             f->line_number++;
             return UwOK();
 
@@ -375,7 +377,13 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
                 f->partial_utf8[f->partial_utf8_len++] = *end++;
                 bytes_processed++;
             }
-            f->position = f->data_size;
+            if (f->data_size < LINE_READER_BUFFER_SIZE) {
+                // reached end of file, set EOF state
+                f->position = 0;
+                f->data_size = 0;
+            } else {
+                f->position = f->data_size;
+            }
         }
     } while(true);
 }
@@ -500,6 +508,43 @@ UwResult _uw_file_open(UwValuePtr file_name, int flags, mode_t mode)
     uw_return_if_error(&status);
 
     return uw_move(&file);
+}
+
+/****************************************************************
+ * Miscellaneous functions
+ */
+
+static UwResult get_file_size(char* file_name)
+{
+    struct stat statbuf;
+    if (stat(file_name, &statbuf) == -1) {
+        return UwErrno(errno);
+    }
+    if ( ! (statbuf.st_mode & S_IFREG)) {
+        return UwError(UW_ERROR_NOT_REGULAR_FILE);
+    }
+    return UwUnsigned(statbuf.st_size);
+}
+
+UwResult uw_file_size(UwValuePtr file_name)
+{
+    if (uw_is_charptr(file_name)) {
+        switch (file_name->charptr_subtype) {
+            case UW_CHARPTR:
+                return get_file_size((char*) file_name->charptr);
+
+            case UW_CHAR32PTR: {
+                UW_CSTRING_LOCAL(fname, file_name);
+                return get_file_size(fname);
+            }
+            default:
+                _uw_panic_bad_charptr_subtype(file_name);
+        }
+    } else {
+        uw_assert_string(file_name);
+        UW_CSTRING_LOCAL(fname, file_name);
+        return get_file_size(fname);
+    }
 }
 
 /****************************************************************
