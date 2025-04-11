@@ -5,6 +5,8 @@
 #include "include/uw.h"
 #include "src/uw_struct_internal.h"
 
+#define LINE_READER_BUFFER_SIZE  4096  // typical filesystem block size
+
 typedef struct {
     int fd;               // file descriptor
     bool is_external_fd;  // fd is set by `set_fd` and should not be closed
@@ -13,9 +15,9 @@ typedef struct {
 
     // line reader data
     // XXX okay for now, revise later
-    char8_t* buffer;
-    unsigned position;  // in the buffer
-    unsigned data_size; // in the buffer
+    char8_t* buffer;    // this has fixed LINE_READER_BUFFER_SIZE
+    unsigned position;  // current position in the buffer when scanning for line break
+    unsigned data_size; // size of data in the buffer
     char8_t  partial_utf8[4];  // UTF-8 sequence may span adjacent reads
     unsigned partial_utf8_len;
     _UwValue pushback;  // for unread_line
@@ -23,8 +25,6 @@ typedef struct {
 } _UwFile;
 
 #define get_data_ptr(value)  ((_UwFile*) _uw_get_data_ptr((value), UwTypeId_File))
-
-#define LINE_READER_BUFFER_SIZE  4096  // typical filesystem block size
 
 // forward declarations
 static void file_close(UwValuePtr self);
@@ -290,23 +290,32 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
         return UwOK();
     }
 
+    if ( ! (f->position || f->data_size)) {
+        // EOF condition
+        // XXX warn if f->partial_utf8_len != 0
+        return UwError(UW_ERROR_EOF);
+    }
+
     do {
         if (f->position == f->data_size) {
 
-            if (f->data_size < LINE_READER_BUFFER_SIZE) {
-                // end of file
-                return UwError(UW_ERROR_EOF);
-            }
-            f->position = 0;
+            // reached end of data scanning for line break
+            // read next chunk of file
             {
                 UwValue status = file_read(self, f->buffer, LINE_READER_BUFFER_SIZE, &f->data_size);
                 uw_return_if_error(&status);
 
                 if (f->data_size == 0) {
-                    // XXX warn if f->partial_utf8_len != 0
-                    return UwError(UW_ERROR_EOF);
+                    if (f->position) {
+                        // last line without line break
+                        // data_size is zero, reset position for EOF condition
+                        f->position = 0;
+                        return UwOK();
+                    }
+                    uw_panic("Line reader in bad state\n");
                 }
             }
+            f->position = 0;
 
             if (f->partial_utf8_len) {
                 // process partial UTF-8 sequence
@@ -341,7 +350,7 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
         char8_t* start = f->buffer + f->position;
         char8_t* lf = (char8_t*) strchr((char*) start, '\n');
         if (lf) {
-            // found newline, don't care about partial UTF-8
+            // found line break, don't care about partial UTF-8
             lf++;
             unsigned end_pos = lf - f->buffer;
             unsigned bytes_processed;
