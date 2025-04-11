@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-//#include <fcntl.h>
 
 #include "include/uw.h"
 #include "include/uw_args.h"
@@ -1245,7 +1244,7 @@ int main(int argc, char* argv[])
     UwValue timediff = uw_timestamp_diff(&end_time, &start_time);
     UwValue timediff_str = uw_to_string(&timediff);
     UW_CSTRING_LOCAL(timediff_cstr, &timediff_str);
-    fprintf(stderr, "time elapsed: %s", timediff_cstr);
+    fprintf(stderr, "time elapsed: %s\n", timediff_cstr);
 
     if (num_fail == 0) {
         fprintf(stderr, "%d test%s OK\n", num_tests, (num_tests == 1)? "" : "s");
