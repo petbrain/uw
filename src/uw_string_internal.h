@@ -10,10 +10,6 @@
 extern "C" {
 #endif
 
-// branch optimization hints
-#define _likely_(x)    __builtin_expect(!!(x), 1)
-#define _unlikely_(x)  __builtin_expect(!!(x), 0)
-
 #define UWSTRING_BLOCK_SIZE    16
 /*
  * The string is allocated in blocks.
@@ -44,7 +40,7 @@ static inline uint8_t* _uw_string_char_ptr(UwValuePtr s, unsigned start_pos)
  */
 {
     unsigned offset = _uw_string_char_size(s) * start_pos;
-    if (_likely_(s->str_embedded)) {
+    if (_uw_likely(s->str_embedded)) {
         return &s->str_1[offset];
     } else {
         return &s->string_data->data[offset];
@@ -55,7 +51,7 @@ static unsigned embedded_capacity[4] = {12, 6, 4, 3};
 
 static inline unsigned _uw_string_capacity(UwValuePtr s)
 {
-    if (_likely_(s->str_embedded)) {
+    if (_uw_likely(s->str_embedded)) {
         return embedded_capacity[s->str_char_size];
     } else {
         return s->string_data->capacity;
@@ -64,7 +60,7 @@ static inline unsigned _uw_string_capacity(UwValuePtr s)
 
 static inline unsigned _uw_string_length(UwValuePtr s)
 {
-    if (_likely_(s->str_embedded)) {
+    if (_uw_likely(s->str_embedded)) {
         return s->str_embedded_length;
     } else {
         return s->str_length;
@@ -73,7 +69,7 @@ static inline unsigned _uw_string_length(UwValuePtr s)
 
 static inline void _uw_string_set_length(UwValuePtr s, unsigned length)
 {
-    if (_likely_(s->str_embedded)) {
+    if (_uw_likely(s->str_embedded)) {
         s->str_embedded_length = length;
     } else {
         s->str_length = length;
@@ -86,7 +82,7 @@ static inline unsigned _uw_string_inc_length(UwValuePtr s, unsigned increment)
  */
 {
     unsigned length;
-    if (_likely_(s->str_embedded)) {
+    if (_uw_likely(s->str_embedded)) {
         length = s->str_embedded_length;
         s->str_embedded_length = length + increment;
     } else {
@@ -146,13 +142,13 @@ static inline uint8_t update_char_width(uint8_t width, char32_t c)
  * The result is converted to char size by char_width_to_char_size()
  */
 {
-    if (_unlikely_(c >= 16777216)) {
+    if (_uw_unlikely(c >= 16777216)) {
         return width | 4;
     }
-    if (_unlikely_(c >= 65536)) {
+    if (_uw_unlikely(c >= 65536)) {
         return width | 2;
     }
-    if (_unlikely_(c >= 256)) {
+    if (_uw_unlikely(c >= 256)) {
         return width | 1;
     }
     return width;
@@ -194,12 +190,12 @@ static inline char32_t read_utf8_char(char8_t** str)
  */
 {
     char8_t c = **str;
-    if (_unlikely_(c == 0)) {
+    if (_uw_unlikely(c == 0)) {
         return 0;
     }
     (*str)++;
 
-    if (c < 0x80) {
+    if (_uw_likely(c < 0x80)) {
         return  c;
     }
 
@@ -208,8 +204,8 @@ static inline char32_t read_utf8_char(char8_t** str)
 
 #   define APPEND_NEXT         \
         next = **str;          \
-        if (_unlikely_(next == 0)) return 0; \
-        if (_unlikely_((next & 0b1100'0000) != 0b1000'0000)) goto bad_utf8; \
+        if (_uw_unlikely(next == 0)) return 0; \
+        if (_uw_unlikely((next & 0b1100'0000) != 0b1000'0000)) goto bad_utf8; \
         (*str)++;              \
         codepoint <<= 6;       \
         codepoint |= next & 0x3F;
@@ -227,7 +223,7 @@ static inline char32_t read_utf8_char(char8_t** str)
     } else {
         goto bad_utf8;
     }
-    if (_unlikely_(codepoint == 0)) {
+    if (_uw_unlikely(codepoint == 0)) {
         // zero codepoint encoded with 2 or more bytes,
         // make it invalid to avoid mixing up with 1-byte null character
 bad_utf8:

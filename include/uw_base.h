@@ -17,6 +17,10 @@ extern "C" {
 
 #define UW_LENGTH(array)  (sizeof(array) / sizeof((array)[0]))  // get array length
 
+// branch optimization hints
+#define _uw_likely(x)    __builtin_expect(!!(x), 1)
+#define _uw_unlikely(x)  __builtin_expect(!!(x), 0)
+
 /****************************************************************
  * UwValue
  */
@@ -245,7 +249,7 @@ typedef _UwValue  UwResult;  // alias for return values
 
 #define uw_assert(condition) \
     ({  \
-        if (!(condition)) {  \
+        if (_uw_unlikely( !(condition) )) {  \
             uw_panic("UW assertion failed at %s:%s:%d: " #condition "\n", __FILE__, __func__, __LINE__);  \
         }  \
     })
@@ -572,11 +576,11 @@ static inline bool uw_is_subtype(UwValuePtr value, UwTypeId type_id)
 {
     UwTypeId t = value->type_id;
     for (;;) {
-        if (t == type_id) {
+        if (_uw_likely(t == type_id)) {
             return true;
         }
         t = _uw_types[t]->ancestor_id;
-        if (t == UwTypeId_Null) {
+        if (_uw_likely(t == UwTypeId_Null)) {
             return false;
         }
     }
