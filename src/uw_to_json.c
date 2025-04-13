@@ -17,9 +17,10 @@ static unsigned estimate_escaped_length(UwValuePtr str, uint8_t* char_size)
  */
 {
 #   define INCREMENT_LENGTH  \
-        if (c < 32) {  \
-            if (c == '\\' || c == '\b' || c == '\f' ||  \
-                c == '\n' || c == '\r' || c == '\t') {  \
+        if (c == '"'  || c == '\\') {  \
+            length += 2;  \
+        } else if (c < 32) {  \
+            if (c == '\b' || c == '\f' || c == '\n' || c == '\r' || c == '\t') {  \
                 length += 2;  \
             } else {  \
                 length += 6;  \
@@ -84,13 +85,19 @@ static UwResult escape_string(UwValuePtr str)
  */
 {
 #   define APPEND_ESCAPED_CHAR  \
-        if (c < 32) {  \
+        if (c == '"'  || c == '\\') {  \
+            if (!uw_string_append(&result, '\\')) {  \
+                return UwOOM();  \
+            }  \
+            if (!uw_string_append(&result, c)) {  \
+                return UwOOM();  \
+            }  \
+        } else if (c < 32) {  \
             if (!uw_string_append(&result, '\\')) {  \
                 return UwOOM();  \
             }  \
             bool append_ok = false;  \
             switch (c)  {  \
-                case '\\': append_ok = uw_string_append(&result, '\\'); break;  \
                 case '\b': append_ok = uw_string_append(&result, 'b'); break;  \
                 case '\f': append_ok = uw_string_append(&result, 'f'); break;  \
                 case '\n': append_ok = uw_string_append(&result, 'n'); break;  \
