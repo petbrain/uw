@@ -61,14 +61,13 @@ static unsigned estimate_escaped_length(UwValuePtr str, uint8_t* char_size)
         }
     } else {
         uw_assert_string(str);
-        StrMethods* strmeth = get_str_methods(str);
 
         unsigned n = _uw_string_length(str);
-        uint8_t* ptr = _uw_string_char_ptr(str, 0);
+        uint8_t* ptr = _uw_string_start(str);
         uint8_t chr_sz = _uw_string_char_size(str);
 
         for (unsigned i = 0; i < n; i++) {
-            char32_t c = strmeth->get_char(ptr);
+            char32_t c = _uw_get_char(ptr, chr_sz);
             INCREMENT_LENGTH
             ptr += chr_sz;
         }
@@ -158,14 +157,13 @@ static UwResult escape_string(UwValuePtr str)
         }
     } else {
         uw_assert_string(str);
-        StrMethods* strmeth = get_str_methods(str);
 
         unsigned length = _uw_string_length(str);
-        uint8_t* ptr = _uw_string_char_ptr(str, 0);
+        uint8_t* ptr = _uw_string_start(str);
         uint8_t char_size = _uw_string_char_size(str);
 
         for (unsigned i = 0; i < length; i++) {
-            char32_t c = strmeth->get_char(ptr);
+            char32_t c = _uw_get_char(ptr, char_size);
             APPEND_ESCAPED_CHAR
             ptr += char_size;
         }

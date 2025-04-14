@@ -263,6 +263,10 @@ void _uw_panic_bad_charptr_subtype(UwValuePtr v);
 [[ noreturn ]]
 void _uw_panic_no_interface(UwTypeId type_id, unsigned interface_id);
 
+[[ noreturn ]]
+void _uw_panic_bad_char_size(uint8_t char_size);
+
+
 /****************************************************************
  * Hash functions
  */

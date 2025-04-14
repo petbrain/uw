@@ -11,7 +11,159 @@
 extern "C" {
 #endif
 
-uint8_t uw_string_char_size(UwValuePtr str);
+static inline uint8_t _uw_string_char_size(UwValuePtr s)
+/*
+ * char_size is stored as 0-based whereas all
+ * functions use 1-based values.
+ */
+{
+    return s->str_char_size + 1;
+}
+
+static inline uint8_t uw_string_char_size(UwValuePtr str)
+{
+    uw_assert_string(str);
+    return _uw_string_char_size(str);
+}
+
+static inline uint8_t* _uw_string_start(UwValuePtr str)
+/*
+ * Return pointer to the start of internal string data.
+ */
+{
+    if (_uw_likely(str->str_embedded)) {
+        return str->str_1;
+    } else {
+        return str->string_data->data;
+    }
+}
+
+static inline uint8_t* _uw_string_start_end(UwValuePtr str, uint8_t** end)
+/*
+ * Return pointer to the start of internal string data
+ * and write final pointer to `end`.
+ */
+{
+    if (_uw_likely(str->str_embedded)) {
+        *end = &str->str_1[str->str_embedded_length * _uw_string_char_size(str)];
+        return str->str_1;
+    } else {
+        _UwStringData* sdata = str->string_data;
+        *end = &sdata->data[str->str_length * _uw_string_char_size(str)];
+        return sdata->data;
+    }
+}
+
+static inline uint8_t* _uw_string_start_length(UwValuePtr str, unsigned* length)
+/*
+ * Return pointer to the start of internal string data
+ * and write length of string to `length`.
+ */
+{
+   if (_uw_likely(str->str_embedded)) {
+        *length = str->str_embedded_length;
+        return str->str_1;
+    } else {
+        *length = str->str_length;
+        return str->string_data->data;
+    }
+}
+
+static inline uint8_t* _uw_string_char_ptr(UwValuePtr str, unsigned position)
+/*
+ * Return address of character in string at `position`.
+ * If position is beyond end of line return nullptr.
+ */
+{
+    unsigned offset = position * _uw_string_char_size(str);
+    if (_uw_likely(str->str_embedded)) {
+        if (_uw_likely(position < str->str_embedded_length)) {
+            return &str->str_1[offset];
+        }
+    } else {
+        if (_uw_likely(position < str->str_length)) {
+            return &str->string_data->data[offset];
+        }
+    }
+    return nullptr;
+}
+
+#define UW_CHAR_METHODS_IMPL(type_name)  \
+    static inline char32_t _uw_get_char_##type_name(uint8_t* p)  \
+    {  \
+        return *((type_name*) p); \
+    }  \
+    static void _uw_put_char_##type_name(uint8_t* p, char32_t c)  \
+    {  \
+        *((type_name*) p) = (type_name) c; \
+    }
+
+UW_CHAR_METHODS_IMPL(uint8_t)
+UW_CHAR_METHODS_IMPL(uint16_t)
+UW_CHAR_METHODS_IMPL(uint32_t)
+
+static inline char32_t _uw_get_char_uint24_t(uint8_t* p)
+{
+    // always little endian
+    char32_t c = p[0] | (p[1] << 8) | (p[2] << 16);
+    return c;
+}
+
+static inline void _uw_put_char_uint24_t(uint8_t* p, char32_t c)
+{
+    // always little endian
+    p[0] = (uint8_t) c; c >>= 8;
+    p[1] = (uint8_t) c; c >>= 8;
+    p[2] = (uint8_t) c;
+}
+
+static inline char32_t _uw_get_char(uint8_t* ptr, uint8_t char_size)
+{
+    switch (char_size) {
+        case 1: return _uw_get_char_uint8_t(ptr);
+        case 2: return _uw_get_char_uint16_t(ptr);
+        case 3: return _uw_get_char_uint24_t(ptr);
+        case 4: return _uw_get_char_uint32_t(ptr);
+        default: _uw_panic_bad_char_size(char_size);
+    }
+}
+
+static inline void _uw_put_char(uint8_t* ptr, char32_t chr, uint8_t char_size)
+{
+    switch (char_size) {
+        case 1: _uw_put_char_uint8_t(ptr, chr); return;
+        case 2: _uw_put_char_uint16_t(ptr, chr); return;
+        case 3: _uw_put_char_uint24_t(ptr, chr); return;
+        case 4: _uw_put_char_uint32_t(ptr, chr); return;
+        default: _uw_panic_bad_char_size(char_size);
+    }
+}
+
+static inline char32_t _uw_char_at(UwValuePtr str, unsigned position)
+/*
+ * Return character at `position`.
+ * If position is beyond end of line return 0.
+ */
+{
+    uint8_t char_size = _uw_string_char_size(str);
+    unsigned offset = position * char_size;
+    if (_uw_likely(str->str_embedded)) {
+        if (_uw_likely(position < str->str_embedded_length)) {
+            return _uw_get_char(&str->str_1[offset], char_size);
+        }
+    } else {
+        if (_uw_likely(position < str->str_length)) {
+            return _uw_get_char(&str->string_data->data[offset], char_size);
+        }
+    }
+    return 0;
+}
+
+static inline char32_t uw_char_at(UwValuePtr str, unsigned position)
+{
+    uw_assert_string(str);
+    return _uw_char_at(str, position);
+}
 
 // check if `index` is within string length
 #define uw_string_index_valid(str, index) ((index) < uw_strlen(str))
@@ -40,12 +192,6 @@ void uw_substr_to_utf8_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos,
 UwResult uw_substr(UwValuePtr str, unsigned start_pos, unsigned end_pos);
 /*
  * Get substring from `start_pos` to `end_pos`.
- */
-
-char32_t uw_char_at(UwValuePtr str, unsigned position);
-/*
- * Return character at `position`.
- * If position is beyond end of line return 0.
  */
 
 bool uw_string_erase(UwValuePtr str, unsigned start_pos, unsigned end_pos);
@@ -86,12 +232,6 @@ char* uw_char32_to_utf8(char32_t codepoint, char* buffer);
 /*
  * Write up to 4 characters to buffer.
  * Return pointer to the next position in buffer.
- */
-
-void* uw_string_data(UwValuePtr str, unsigned* size);
-/*
- * Return pointer to internal string data and write its size in bytes to `size`.
- * The function is intended for file I/O operations.
  */
 
 void _uw_putchar32_utf8(FILE* fp, char32_t codepoint);

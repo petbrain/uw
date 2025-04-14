@@ -23,30 +23,6 @@ extern UwType _uw_string_type;
  * Low level helper functions.
  */
 
-static char _panic_bad_char_size[] = "Bad char size: %u\n";
-
-static inline uint8_t _uw_string_char_size(UwValuePtr s)
-/*
- * char_size is stored as 0-based whereas all
- * functions use 1-based values.
- */
-{
-    return s->str_char_size + 1;
-}
-
-static inline uint8_t* _uw_string_char_ptr(UwValuePtr s, unsigned start_pos)
-/*
- * Return address of character in string at `start_pos`.
- */
-{
-    unsigned offset = _uw_string_char_size(s) * start_pos;
-    if (_uw_likely(s->str_embedded)) {
-        return &s->str_1[offset];
-    } else {
-        return &s->string_data->data[offset];
-    }
-}
-
 static unsigned embedded_capacity[4] = {12, 6, 4, 3};
 
 static inline unsigned _uw_string_capacity(UwValuePtr s)
@@ -96,8 +72,6 @@ static inline unsigned _uw_string_inc_length(UwValuePtr s, unsigned increment)
  * Methods that depend on char_size field.
  */
 
-typedef char32_t (*GetChar)(uint8_t* p);
-typedef void     (*PutChar)(uint8_t* p, char32_t c);
 typedef void     (*Hash)(uint8_t* self_ptr, unsigned length, UwHashContext* ctx);
 typedef uint8_t  (*MaxCharSize)(uint8_t* self_ptr, unsigned length);
 typedef bool     (*Equal)(uint8_t* self_ptr, UwValuePtr other, unsigned other_start_pos, unsigned length);
@@ -109,8 +83,6 @@ typedef unsigned (*CopyFromUtf8)(uint8_t* self_ptr, char8_t* src_ptr, unsigned l
 typedef unsigned (*CopyFromUtf32)(uint8_t* self_ptr, char32_t* src_ptr, unsigned length);
 
 typedef struct {
-    GetChar       get_char;
-    PutChar       put_char;
     Hash          hash;
     MaxCharSize   max_char_size;
     Equal         equal;
