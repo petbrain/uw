@@ -374,9 +374,11 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
             f->data_size = 0;
             f->line_number++;
             return UwOK();
-        } else {
-            f->position = f->data_size;
         }
+
+        // go read next chunk
+        f->position = f->data_size;
+
     } while(true);
 }
 
