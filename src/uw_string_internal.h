@@ -114,16 +114,16 @@ static inline uint8_t update_char_width(uint8_t width, char32_t c)
  * The result is converted to char size by char_width_to_char_size()
  */
 {
-    if (c >= 16777216) {
-        return width | 4;
+    if (c < 256) {
+        return width;
     }
-    if (c >= 65536) {
-        return width | 2;
-    }
-    if (c >= 256) {
+    if (c < 65536) {
         return width | 1;
     }
-    return width;
+    if (c < 16777216) {
+        return width | 2;
+    }
+    return width | 4;
 }
 
 static inline uint8_t char_width_to_char_size(uint8_t width)
