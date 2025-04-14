@@ -193,7 +193,7 @@ static unsigned estimate_array_length(UwValuePtr value, unsigned indent, unsigne
             length += /* line break */ 1 + indent * depth;
         }
         UwValue item = uw_array_item(value, i);
-        unsigned item_length = estimate_length(&item, indent, depth + 1, max_char_size);
+        unsigned item_length = estimate_length(&item, indent, depth + multiline, max_char_size);
         if (item_length == 0) {
             return 0;
         }
@@ -234,7 +234,7 @@ static bool array_to_json(UwValuePtr value, unsigned indent, unsigned depth, UwV
             }
         }
         UwValue item = uw_array_item(value, i);
-        if (!value_to_json(&item, indent, depth + 1, result)) {
+        if (!value_to_json(&item, indent, depth + multiline, result)) {
             return false;
         }
     }}
@@ -278,7 +278,7 @@ static unsigned estimate_map_length(UwValuePtr value, unsigned indent, unsigned 
         if (k_length == 0) {
             return 0;
         }
-        unsigned v_length = estimate_length(&v, indent, depth + 1, max_char_size);
+        unsigned v_length = estimate_length(&v, indent, depth + multiline, max_char_size);
         if (v_length == 0) {
             return 0;
         }
@@ -343,7 +343,7 @@ static bool map_to_json(UwValuePtr value, unsigned indent, unsigned depth, UwVal
                 return false;
             }
         }
-        if (!value_to_json(&v, indent, depth + 1, result)) {
+        if (!value_to_json(&v, indent, depth + multiline, result)) {
             return false;
         }
     }}
