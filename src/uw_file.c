@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "include/uw.h"
+#include "src/uw_string_internal.h"
 #include "src/uw_struct_internal.h"
 
 #define LINE_READER_BUFFER_SIZE  4096  // typical filesystem block size
@@ -315,7 +316,6 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
 
             if (f->partial_utf8_len) {
                 // process partial UTF-8 sequence
-                // simply append chars to partial_utf8 until uw_string_append_utf8 succeeds
                 while (f->partial_utf8_len < 4) {
 
                     if (f->position == f->data_size) {
@@ -331,11 +331,14 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
                     }
                     f->position++;
                     f->partial_utf8[f->partial_utf8_len++] = c;
-                    unsigned bytes_processed;
-                    if (!uw_string_append_utf8(line, f->partial_utf8, f->partial_utf8_len, &bytes_processed)) {
-                        return UwOOM();
-                    }
-                    if (bytes_processed) {
+
+                    char8_t* ptr = f->partial_utf8;
+                    unsigned bytes_remaining = f->partial_utf8_len;
+                    char32_t chr;
+                    if (read_utf8_buffer(&ptr, &bytes_remaining, &chr)) {
+                        if (!uw_string_append(line, chr)) {
+                            return UwOOM();
+                        }
                         break;
                     }
                 }
@@ -343,48 +346,36 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
             }
         }
 
-        char8_t* start = f->buffer + f->position;
-        unsigned n = f->data_size - f->position;
-        char8_t* lf = (char8_t*) memchr((char*) start, '\n', n);
-        if (lf) {
-            // found line break, don't care about partial UTF-8
-            lf++;
-            unsigned end_pos = lf - f->buffer;
-            unsigned bytes_processed;
-
-            if (!uw_string_append_utf8(line, start, end_pos - f->position, &bytes_processed)) {
-                return UwOOM();
+        char8_t* ptr = f->buffer + f->position;
+        unsigned bytes_remaining = f->data_size - f->position;
+        while (bytes_remaining) {
+            char32_t chr;
+            if (_uw_unlikely(!read_utf8_buffer(&ptr, &bytes_remaining, &chr))) {
+                break;
             }
-            if (end_pos < f->data_size) {
-                f->position = end_pos;
-            } else if (f->data_size < LINE_READER_BUFFER_SIZE) {
-                // reached end of file, set EOF state
-                f->position = 0;
-                f->data_size = 0;
+            if (_uw_likely(chr != 0xFFFFFFFF)) {
+                if (_uw_unlikely(!uw_string_append(line, chr))) {
+                    return UwOOM();
+                }
+                if (chr == '\n') {
+                    f->position = f->data_size - bytes_remaining;
+                    f->line_number++;
+                    return UwOK();
+                }
             }
+        }
+        // move unprocessed data to partial_utf8
+        while (bytes_remaining--) {
+            f->partial_utf8[f->partial_utf8_len++] = *ptr++;
+        }
+        if (f->data_size < LINE_READER_BUFFER_SIZE) {
+            // reached end of file, set EOF state
+            f->position = 0;
+            f->data_size = 0;
             f->line_number++;
             return UwOK();
-
         } else {
-            unsigned bytes_processed;
-            if (!uw_string_append_utf8(line, start, n, &bytes_processed)) {
-                return UwOOM();
-            }
-
-            // move unprocessed data to partial_utf8
-            char8_t* end = start + bytes_processed;
-            while (bytes_processed < n) {
-                f->partial_utf8[f->partial_utf8_len++] = *end++;
-                bytes_processed++;
-            }
-            if (f->data_size < LINE_READER_BUFFER_SIZE) {
-                // reached end of file, set EOF state
-                f->position = 0;
-                f->data_size = 0;
-                return UwOK();
-            } else {
-                f->position = f->data_size;
-            }
+            f->position = f->data_size;
         }
     } while(true);
 }

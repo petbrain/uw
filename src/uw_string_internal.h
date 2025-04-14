@@ -143,6 +143,19 @@ static inline uint8_t char_width_to_char_size(uint8_t width)
     return 1;
 }
 
+static inline uint8_t calc_char_size(char32_t c)
+{
+    if (c < 256) {
+        return 1;
+    } else if (c < 65536) {
+        return 2;
+    } else if (c < 16777216) {
+        return 3;
+    } else {
+        return 4;
+    }
+}
+
 /****************************************************************
  * Misc. functions
  */
@@ -150,6 +163,10 @@ static inline uint8_t char_width_to_char_size(uint8_t width)
 void _uw_string_dump_data(FILE* fp, UwValuePtr str, int indent);
 /*
  * Helper function for _uw_string_dump.
+ */
+
+/****************************************************************
+ * UTF-8 functions
  */
 
 static inline char32_t read_utf8_char(char8_t** str)
@@ -202,6 +219,69 @@ bad_utf8:
         codepoint = 0xFFFFFFFF;
     }
     return codepoint;
+#   undef APPEND_NEXT
+}
+
+static inline bool read_utf8_buffer(char8_t** ptr, unsigned* bytes_remaining, char32_t* codepoint)
+/*
+ * Decode UTF-8 character from buffer, update `*ptr`.
+ *
+ * Null charaters are returned as zero codepoints.
+ *
+ * Return false if UTF-8 sequence is incomplete or `bytes_remaining` is zero.
+ * Otherwise return true.
+ * If character is invalid, 0xFFFFFFFF is written to the `codepoint`.
+ */
+{
+    char8_t* p = *ptr;
+    unsigned remaining = *bytes_remaining;
+    if (!remaining) {
+        return false;
+    }
+
+    char32_t result = 0;
+    char8_t next;
+
+#   define APPEND_NEXT      \
+        next = *p++;        \
+        remaining--;        \
+        if (_uw_unlikely((next & 0b1100'0000) != 0b1000'0000)) goto bad_utf8; \
+        result <<= 6;       \
+        result |= next & 0x3F;
+
+    char8_t c = *p++;
+    remaining--;
+    if (c < 0x80) {
+        result = c;
+    } else {
+        result = c & 0b0001'1111;
+        if ((c & 0b1110'0000) == 0b1100'0000) {
+            if (_uw_unlikely(!remaining)) return false;
+            APPEND_NEXT
+        } else if ((c & 0b1111'0000) == 0b1110'0000) {
+            if (_uw_unlikely(remaining < 2)) return false;
+            APPEND_NEXT
+            APPEND_NEXT
+        } else if ((c & 0b1111'1000) == 0b1111'0000) {
+            if (_uw_unlikely(remaining < 3)) return false;
+            APPEND_NEXT
+            APPEND_NEXT
+            APPEND_NEXT
+        } else {
+            goto bad_utf8;
+        }
+        if (_uw_unlikely(codepoint == 0)) {
+            // zero codepoint encoded with 2 or more bytes,
+            // make it invalid to avoid mixing up with 1-byte null character
+bad_utf8:
+            result = 0xFFFFFFFF;
+        }
+    }
+    *ptr = p;
+    *bytes_remaining = remaining;
+    *codepoint = result;
+    return true;
+
 #   undef APPEND_NEXT
 }
 

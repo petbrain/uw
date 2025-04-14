@@ -28,19 +28,6 @@ static unsigned _max_capacity[4] = {
  * Basic functions
  */
 
-static inline uint8_t calc_char_size(char32_t c)
-{
-    if (c < 256) {
-        return 1;
-    } else if (c < 65536) {
-        return 2;
-    } else if (c < 16777216) {
-        return 3;
-    } else {
-        return 4;
-    }
-}
-
 static unsigned calc_string_data_size(uint8_t char_size, unsigned desired_capacity, unsigned* real_capacity)
 /*
  * Calculate memory size for string data.
@@ -181,32 +168,23 @@ static bool _do_expand_string(UwValuePtr str, unsigned increment, uint8_t new_ch
         // expand string inplace
 
         uint8_t char_size = _uw_string_char_size(str);
-        unsigned length = str->str_length;
 
-        if (increment > _max_capacity[char_size] - length) {
+        if (increment > _max_capacity[char_size] - str->str_length) {
             return false;
         }
-
-        unsigned new_length = length + increment;
-        unsigned capacity = _uw_string_capacity(str);
-
-        if (new_length <= capacity) {
+        unsigned new_capacity = str->str_length + increment;
+        if (new_capacity <= str->string_data->capacity) {
             // no need to expand
             return true;
         }
-
         unsigned orig_memsize = get_string_data_size(str);
-        unsigned new_capacity;
-        unsigned new_memsize = calc_string_data_size(char_size, new_length, &new_capacity);
+        unsigned new_memsize = calc_string_data_size(char_size, new_capacity, &str->string_data->capacity);
 
         // reallocate data
-
         if (!uw_typeof(str)->allocator->reallocate((void**) &str->string_data,
                                                     orig_memsize, new_memsize, false, nullptr)) {
             return false;
         }
-        str->string_data->capacity = new_capacity;
-        str->str_length = length;
         return true;
     }
 
@@ -262,11 +240,11 @@ static inline bool expand_string(UwValuePtr str, unsigned increment, uint8_t new
     uint8_t char_size = _uw_string_char_size(str);
     if (_uw_likely(new_char_size <= char_size)) {
         if (_uw_likely(str->str_embedded)) {
-            if (str->str_embedded_length + increment < embedded_capacity[char_size]) {
+            if (str->str_embedded_length + increment <= embedded_capacity[char_size - 1]) {
                 return true;
             }
         } else {
-            if (str->str_length + increment < str->string_data->capacity) {
+            if (str->str_length + increment <= str->string_data->capacity) {
                 return true;
             }
         }
@@ -479,71 +457,6 @@ char* uw_char32_to_utf8(char32_t codepoint, char* buffer)
     *buffer++ = (char) (0x80 | ((codepoint >> 6) & 0x3F));
     *buffer++ = (char) (0x80 | (codepoint & 0x3F));
     return buffer;
-}
-
-static inline bool read_utf8_buffer(char8_t** ptr, unsigned* bytes_remaining, char32_t* codepoint)
-/*
- * Decode UTF-8 character from buffer, update `*ptr`.
- *
- * Null charaters are returned as zero codepoints.
- *
- * Return false if UTF-8 sequence is incomplete or `bytes_remaining` is zero.
- * Otherwise return true.
- * If character is invalid, 0xFFFFFFFF is written to the `codepoint`.
- */
-{
-    unsigned remaining = *bytes_remaining;
-    if (!remaining) {
-        return false;
-    }
-
-    char32_t result = 0;
-    char8_t next;
-
-    char8_t c = *((*ptr)++);
-    remaining--;
-
-#   define APPEND_NEXT         \
-        next = **ptr;          \
-        if (_uw_unlikely((next & 0b1100'0000) != 0b1000'0000)) goto bad_utf8; \
-        (*ptr)++;              \
-        remaining--;  \
-        result <<= 6;       \
-        result |= next & 0x3F;
-
-    if (c < 0x80) {
-        result = c;
-        *bytes_remaining = remaining;
-    } else {
-        result = c & 0b0001'1111;
-        if ((c & 0b1110'0000) == 0b1100'0000) {
-            if (_uw_unlikely(!remaining)) return false;
-            APPEND_NEXT
-            *bytes_remaining = remaining;
-        } else if ((c & 0b1111'0000) == 0b1110'0000) {
-            if (_uw_unlikely(remaining < 2)) return false;
-            APPEND_NEXT
-            APPEND_NEXT
-            *bytes_remaining = remaining;
-        } else if ((c & 0b1111'1000) == 0b1111'0000) {
-            if (_uw_unlikely(remaining < 3)) return false;
-            APPEND_NEXT
-            APPEND_NEXT
-            APPEND_NEXT
-            *bytes_remaining = remaining;
-        } else {
-            goto bad_utf8;
-        }
-        if (_uw_unlikely(codepoint == 0)) {
-            // zero codepoint encoded with 2 or more bytes,
-            // make it invalid to avoid mixing up with 1-byte null character
-bad_utf8:
-            result = 0xFFFFFFFF;
-        }
-    }
-    *codepoint = result;
-    return true;
-#   undef APPEND_NEXT
 }
 
 unsigned utf8_strlen(char8_t* str)
@@ -1672,12 +1585,11 @@ void uw_destroy_cstring(CStringPtr* str)
 
 bool _uw_string_append_c32(UwValuePtr dest, char32_t c)
 {
-    uint8_t char_size = calc_char_size(c);
-    if (!expand_string(dest, 1, char_size)) {
+    if (!expand_string(dest, 1, calc_char_size(c))) {
         return false;
     }
     unsigned length = _uw_string_inc_length(dest, 1);
-    _uw_put_char(_uw_string_char_ptr(dest, length), c, char_size);
+    _uw_put_char(_uw_string_char_ptr(dest, length), c, _uw_string_char_size(dest));
     return true;
 }
 
