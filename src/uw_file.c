@@ -350,11 +350,11 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
         unsigned bytes_remaining = f->data_size - f->position;
         while (bytes_remaining) {
             char32_t chr;
-            if (_uw_unlikely(!read_utf8_buffer(&ptr, &bytes_remaining, &chr))) {
+            if (!read_utf8_buffer(&ptr, &bytes_remaining, &chr)) {
                 break;
             }
-            if (_uw_likely(chr != 0xFFFFFFFF)) {
-                if (_uw_unlikely(!uw_string_append(line, chr))) {
+            if (chr != 0xFFFFFFFF) {
+                if (!uw_string_append(line, chr)) {
                     return UwOOM();
                 }
                 if (chr == '\n') {

@@ -37,9 +37,9 @@ static unsigned estimate_escaped_length(UwValuePtr str, uint8_t* char_size)
         switch (str->charptr_subtype) {
             case UW_CHARPTR: {
                 char8_t* ptr = str->charptr;
-                while(_uw_likely(*ptr != 0)) {
+                while(*ptr != 0) {
                     char32_t c = read_utf8_char(&ptr);
-                    if (_uw_likely(c != 0xFFFFFFFF)) {
+                    if (c != 0xFFFFFFFF) {
                         INCREMENT_LENGTH
                     }
                 }
@@ -133,9 +133,9 @@ static UwResult escape_string(UwValuePtr str)
         switch (str->charptr_subtype) {
             case UW_CHARPTR: {
                 char8_t* ptr = str->charptr;
-                while(_uw_likely(*ptr != 0)) {
+                while(*ptr != 0) {
                     char32_t c = read_utf8_char(&ptr);
-                    if (_uw_likely(c != 0xFFFFFFFF)) {
+                    if (c != 0xFFFFFFFF) {
                         APPEND_ESCAPED_CHAR
                     }
                 }

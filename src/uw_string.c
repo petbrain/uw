@@ -126,7 +126,7 @@ static inline bool clone_string_data(UwValuePtr str)
         return true;
     }
     _UwStringData* sdata = str->string_data;
-    if (_uw_unlikely(sdata->refcount > 1)) {
+    if (sdata->refcount > 1) {
         return _do_clone_string_data(str);
     }
     return true;
@@ -238,8 +238,8 @@ static inline bool expand_string(UwValuePtr str, unsigned increment, uint8_t new
     // quick check if we should not do anything
 
     uint8_t char_size = _uw_string_char_size(str);
-    if (_uw_likely(new_char_size <= char_size)) {
-        if (_uw_likely(str->str_embedded)) {
+    if (new_char_size <= char_size) {
+        if (str->str_embedded) {
             if (str->str_embedded_length + increment <= embedded_capacity[char_size - 1]) {
                 return true;
             }
@@ -462,9 +462,9 @@ char* uw_char32_to_utf8(char32_t codepoint, char* buffer)
 unsigned utf8_strlen(char8_t* str)
 {
     unsigned length = 0;
-    while(_uw_likely(*str != 0)) {
+    while(*str != 0) {
         char32_t c = read_utf8_char(&str);
-        if (_uw_likely(c != 0xFFFFFFFF)) {
+        if (c != 0xFFFFFFFF) {
             length++;
         }
     }
@@ -475,9 +475,9 @@ unsigned utf8_strlen2(char8_t* str, uint8_t* char_size)
 {
     unsigned length = 0;
     uint8_t  width = 0;
-    while(_uw_likely(*str != 0)) {
+    while(*str != 0) {
         char32_t c = read_utf8_char(&str);
-        if (_uw_likely(c != 0xFFFFFFFF)) {
+        if (c != 0xFFFFFFFF) {
             width = update_char_width(width, c);
             length++;
         }
@@ -493,12 +493,12 @@ unsigned utf8_strlen2_buf(char8_t* buffer, unsigned* size, uint8_t* char_size)
     unsigned length = 0;
     uint8_t  width = 0;
 
-    while (_uw_likely(bytes_remaining)) {
+    while (bytes_remaining) {
         char32_t c;
-        if (_uw_unlikely(!read_utf8_buffer(&ptr, &bytes_remaining, &c))) {
+        if (!read_utf8_buffer(&ptr, &bytes_remaining, &c)) {
             break;
         }
-        if (_uw_likely(c != 0xFFFFFFFF)) {
+        if (c != 0xFFFFFFFF) {
             width = update_char_width(width, c);
             length++;
         }
@@ -515,9 +515,9 @@ unsigned utf8_strlen2_buf(char8_t* buffer, unsigned* size, uint8_t* char_size)
 uint8_t utf8_char_size(char8_t* str, unsigned max_len)
 {
     uint8_t width = 0;
-    while(_uw_likely(*str != 0)) {
+    while(*str != 0) {
         char32_t c = read_utf8_char(&str);
-        if (_uw_likely(c != 0xFFFFFFFF)) {
+        if (c != 0xFFFFFFFF) {
             width = update_char_width(width, c);
         }
     }
@@ -528,7 +528,7 @@ char8_t* utf8_skip(char8_t* str, unsigned n)
 {
     while(n--) {
         read_utf8_char(&str);
-        if (_uw_unlikely(*str == 0)) {
+        if (*str == 0) {
             break;
         }
     }
@@ -550,7 +550,7 @@ unsigned uw_strlen_in_utf8(UwValuePtr str)
 
     unsigned length = 0;
 
-    if (_uw_unlikely(uw_is_charptr(str))) {
+    if (uw_is_charptr(str)) {
         switch (str->charptr_subtype) {
             case UW_CHARPTR:
                 length = strlen((char*) str->charptr);
@@ -599,7 +599,7 @@ void _uw_putchar32_utf8(FILE* fp, char32_t codepoint)
 unsigned u32_strlen(char32_t* str)
 {
     unsigned length = 0;
-    while (_uw_likely(*str++)) {
+    while (*str++) {
         length++;
     }
     return length;
@@ -610,7 +610,7 @@ unsigned u32_strlen2(char32_t* str, uint8_t* char_size)
     unsigned length = 0;
     uint8_t width = 0;
     char32_t c;
-    while (_uw_likely(c = *str++)) {
+    while ((c = *str++) != 0) {
         width = update_char_width(width, c);
         length++;
     }
@@ -654,8 +654,8 @@ int u32_strcmp_u8(char32_t* a, char8_t* b)
 char32_t* u32_strchr(char32_t* str, char32_t chr)
 {
     char32_t c;
-    while (_uw_likely(c = *str)) {
-        if (_uw_unlikely(c == chr)) {
+    while ((c = *str) != 0) {
+        if (c == chr) {
             return str;
         }
         str++;
@@ -668,7 +668,7 @@ uint8_t u32_char_size(char32_t* str, unsigned max_len)
     uint8_t width = 0;
     while (max_len--) {
         char32_t c = *str++;
-        if (_uw_unlikely(c == 0)) {
+        if (c == 0) {
             break;
         }
         width = update_char_width(width, c);
@@ -693,7 +693,7 @@ uint8_t u32_char_size(char32_t* str, unsigned max_len)
     static void _hash_##type_name(uint8_t* self_ptr, unsigned length, UwHashContext* ctx) \
     {  \
         type_name* ptr = (type_name*) self_ptr;  \
-        while (_uw_likely(length--)) {  \
+        while (length--) {  \
             union {  \
                 struct {  \
                     char32_t a;  \
@@ -704,7 +704,7 @@ uint8_t u32_char_size(char32_t* str, unsigned max_len)
             \
             data.a = *ptr++;  \
             \
-            if (_uw_unlikely(0 == length--)) {  \
+            if (0 == length--) {  \
                 data.b = 0;  \
                 _uw_hash_uint64(ctx, data.i64);  \
                 break;  \
@@ -722,7 +722,7 @@ STR_HASH_IMPL(uint32_t)
 
 static void _hash_uint24_t(uint8_t* self_ptr, unsigned length, UwHashContext* ctx)
 {
-    while (_uw_likely(length--)) {
+    while (length--) {
         union {
             struct {
                 char32_t a;
@@ -734,7 +734,7 @@ static void _hash_uint24_t(uint8_t* self_ptr, unsigned length, UwHashContext* ct
         data.a = _uw_get_char_uint24_t(self_ptr);
         self_ptr += 3;
 
-        if (_uw_unlikely(0 == length--)) {
+        if (0 == length--) {
             data.b = 0;
             _uw_hash_uint64(ctx, data.i64);
             break;
@@ -758,9 +758,9 @@ static uint8_t _max_char_size_uint8_t(uint8_t* self_ptr, unsigned length)
 static uint8_t _max_char_size_uint16_t(uint8_t* self_ptr, unsigned length)
 {
     uint16_t* ptr = (uint16_t*) self_ptr;
-    while (_uw_likely(length--)) {
+    while (length--) {
         uint16_t c = *ptr++;
-        if (_uw_unlikely(c >= 256)) {
+        if (c >= 256) {
             return 2;
         }
     }
@@ -769,12 +769,12 @@ static uint8_t _max_char_size_uint16_t(uint8_t* self_ptr, unsigned length)
 
 static uint8_t _max_char_size_uint24_t(uint8_t* self_ptr, unsigned length)
 {
-    while (_uw_likely(length--)) {
+    while (length--) {
         char32_t c = _uw_get_char_uint24_t(self_ptr);
         self_ptr += 3;
-        if (_uw_unlikely(c >= 65536)) {
+        if (c >= 65536) {
             return 3;
-        } else if (_uw_unlikely(c >= 256)) {
+        } else if (c >= 256) {
             return 2;
         }
     }
@@ -784,13 +784,13 @@ static uint8_t _max_char_size_uint24_t(uint8_t* self_ptr, unsigned length)
 static uint8_t _max_char_size_uint32_t(uint8_t* self_ptr, unsigned length)
 {
     uint32_t* ptr = (uint32_t*) self_ptr;
-    while (_uw_likely(length--)) {
+    while (length--) {
         uint32_t c = *ptr++;
-        if (_uw_unlikely(c >= 16777216)) {
+        if (c >= 16777216) {
             return 4;
-        } else if (_uw_unlikely(c >= 65536)) {
+        } else if (c >= 65536) {
             return 3;
-        } else if (_uw_unlikely(c >= 256)) {
+        } else if (c >= 256) {
             return 2;
         }
     }
@@ -823,8 +823,8 @@ STR_EQ_MEMCMP_HELPER_IMPL(uint32_t)
     static inline bool eq_##type_name_self##_##type_name_other(uint8_t* self_ptr, type_name_other* other_ptr, unsigned length)  \
     {  \
         type_name_self* this_ptr = (type_name_self*) self_ptr;  \
-        while (_uw_likely(length--)) {  \
-            if (_uw_unlikely(*this_ptr++ != *other_ptr++)) {  \
+        while (length--) {  \
+            if (*this_ptr++ != *other_ptr++) {  \
                 return false;  \
             }  \
         }  \
@@ -843,8 +843,8 @@ STR_EQ_HELPER_IMPL(uint32_t, uint16_t)
 #define STR_EQ_S24_HELPER_IMPL(type_name_other)  \
     static inline bool eq_uint24_t_##type_name_other(uint8_t* self_ptr, type_name_other* other_ptr, unsigned length)  \
     {  \
-        while (_uw_likely(length--)) {  \
-            if (_uw_unlikely(_uw_get_char_uint24_t(self_ptr) != *other_ptr++)) {  \
+        while (length--) {  \
+            if (_uw_get_char_uint24_t(self_ptr) != *other_ptr++) {  \
                 return false;  \
             }  \
             self_ptr += 3;  \
@@ -862,8 +862,8 @@ STR_EQ_S24_HELPER_IMPL(uint32_t)
     static inline bool eq_##type_name_self##_uint24_t(uint8_t* self_ptr, uint24_t* other_ptr, unsigned length)  \
     {  \
         type_name_self* this_ptr = (type_name_self*) self_ptr;  \
-        while (_uw_likely(length--)) {  \
-            if (_uw_unlikely(*this_ptr++ != _uw_get_char_uint24_t((uint8_t*) other_ptr))) {  \
+        while (length--) {  \
+            if (*this_ptr++ != _uw_get_char_uint24_t((uint8_t*) other_ptr)) {  \
                 return false;  \
             }  \
             other_ptr++;  \
@@ -900,12 +900,12 @@ STR_EQ_IMPL(uint32_t)
     static bool _eq_##type_name_self##_char32_t(uint8_t* self_ptr, char32_t* other, unsigned length)  \
     {  \
         type_name_self* this_ptr = (type_name_self*) self_ptr;  \
-        while (_uw_likely(length--)) {  \
+        while (length--) {  \
             char32_t c = *other++;  \
-            if (_uw_unlikely(c == 0)) {  \
+            if (c == 0) {  \
                 return false;  \
             }  \
-            if (_uw_unlikely(*this_ptr++ != c)) {  \
+            if (*this_ptr++ != c) {  \
                 return false;  \
             }  \
         }  \
@@ -920,12 +920,12 @@ STR_EQ_U32_IMPL(uint32_t)
 
 static bool _eq_uint24_t_char32_t(uint8_t* self_ptr, char32_t* other, unsigned length)
 {
-    while (_uw_likely(length--)) {
+    while (length--) {
         char32_t c = *other++;
-        if (_uw_unlikely(c == 0)) {
+        if (c == 0) {
             return false;
         }
-        if (_uw_unlikely((_uw_get_char_uint24_t(self_ptr)) != c)) {
+        if (_uw_get_char_uint24_t(self_ptr) != c) {
             return false;
         }
         self_ptr += 3;
@@ -941,17 +941,17 @@ static bool _eq_uint24_t_char32_t(uint8_t* self_ptr, char32_t* other, unsigned l
     static bool _eq_##type_name_self##_char8_t(uint8_t* self_ptr, char8_t* other, unsigned length)  \
     {  \
         type_name_self* this_ptr = (type_name_self*) self_ptr;  \
-        while(_uw_likely(length--)) {  \
-            if (_uw_unlikely(*other == 0)) {  \
+        while(length--) {  \
+            if (*other == 0) {  \
                 return false;  \
             }  \
             char32_t codepoint = read_utf8_char(&other);  \
             if (check_invalid_codepoint) { \
-                if (_uw_unlikely(codepoint == 0xFFFFFFFF)) {  \
+                if (codepoint == 0xFFFFFFFF) {  \
                     return false;  \
                 }  \
             }  \
-            if (_uw_unlikely(*this_ptr++ != codepoint)) {  \
+            if (*this_ptr++ != codepoint) {  \
                 return false;  \
             }  \
         }  \
@@ -964,12 +964,12 @@ STR_EQ_UTF8_IMPL(uint32_t, 1)
 
 static bool _eq_uint24_t_char8_t(uint8_t* self_ptr, char8_t* other, unsigned length)
 {
-    while(_uw_likely(length--)) {
-        if (_uw_unlikely(*other == 0)) {
+    while(length--) {
+        if (*other == 0) {
             return false;
         }
         char32_t codepoint = read_utf8_char(&other);
-        if (_uw_unlikely(_uw_get_char_uint24_t(self_ptr) != codepoint)) {
+        if (_uw_get_char_uint24_t(self_ptr) != codepoint) {
             return false;
         }
         self_ptr += 3;
@@ -1006,7 +1006,7 @@ STR_COPY_TO_MEMCPY_HELPER_IMPL(uint32_t)
     static inline void cp_##type_name_self##_##type_name_dest(uint8_t* self_ptr, type_name_dest* dest_ptr, unsigned length)  \
     {  \
         type_name_self* src_ptr = (type_name_self*) self_ptr;  \
-        while (_uw_likely(length--)) {  \
+        while (length--) {  \
             *dest_ptr++ = *src_ptr++;  \
         }  \
     }
@@ -1023,7 +1023,7 @@ STR_COPY_TO_HELPER_IMPL(uint32_t, uint16_t)
 #define STR_COPY_TO_S24_HELPER_IMPL(type_name_dest)  \
     static inline void cp_uint24_t_##type_name_dest(uint8_t* self_ptr, type_name_dest* dest_ptr, unsigned length)  \
     {  \
-        while (_uw_likely(length--)) {  \
+        while (length--) {  \
             *dest_ptr++ = _uw_get_char_uint24_t(self_ptr);  \
             self_ptr += 3;  \
         }  \
@@ -1039,7 +1039,7 @@ STR_COPY_TO_S24_HELPER_IMPL(uint32_t)
     static inline void cp_##type_name_self##_uint24_t(uint8_t* self_ptr, uint24_t* dest_ptr, unsigned length)  \
     {  \
         type_name_self* src_ptr = (type_name_self*) self_ptr;  \
-        while (_uw_likely(length--)) {  \
+        while (length--) {  \
             _uw_put_char_uint24_t((uint8_t*) dest_ptr, *src_ptr++);  \
             dest_ptr++;  \
         }  \
@@ -1081,7 +1081,7 @@ static void _cp_to_u8_uint8_t(uint8_t* self_ptr, char* dest, unsigned length)
     static void _cp_to_u8_##type_name_self(uint8_t* self_ptr, char* dest, unsigned length)  \
     {  \
         type_name_self* src_ptr = (type_name_self*) self_ptr;  \
-        while (_uw_likely(length--)) {  \
+        while (length--) {  \
             dest = uw_char32_to_utf8(*src_ptr++, dest); \
         }  \
         *dest = 0;  \
@@ -1094,7 +1094,7 @@ STR_COPY_TO_U8_IMPL(uint32_t)
 
 static void _cp_to_u8_uint24_t(uint8_t* self_ptr, char* dest, unsigned length)
 {
-    while (_uw_likely(length--)) {
+    while (length--) {
         char32_t c = _uw_get_char_uint24_t(self_ptr);
         self_ptr += 3;
         dest = uw_char32_to_utf8(c, dest);
@@ -1109,9 +1109,9 @@ static void _cp_to_u8_uint24_t(uint8_t* self_ptr, char* dest, unsigned length)
     {  \
         type_name_self* dest_ptr = (type_name_self*) self_ptr;  \
         unsigned chars_copied = 0;  \
-        while (_uw_likely(length--)) {  \
+        while (length--) {  \
             char32_t c = *src_ptr++;  \
-            if (_uw_unlikely(c == 0)) {  \
+            if (c == 0) {  \
                 break;  \
             }  \
             *dest_ptr++ = c;  \
@@ -1129,9 +1129,9 @@ STR_CP_FROM_U32_IMPL(uint32_t)
 static unsigned _cp_from_char32_t_uint24_t(uint8_t* self_ptr, char32_t* src_ptr, unsigned length)
 {
     unsigned chars_copied = 0;
-    while (_uw_likely(length--)) {
+    while (length--) {
         char32_t c = *src_ptr++;
-        if (_uw_unlikely(c == 0)) {
+        if (c == 0) {
             break;
         }
         _uw_put_char_uint24_t(self_ptr, c);
@@ -1148,9 +1148,9 @@ static unsigned _cp_from_char32_t_uint24_t(uint8_t* self_ptr, char32_t* src_ptr,
     {  \
         type_name_self* dest_ptr = (type_name_self*) self_ptr;  \
         unsigned chars_copied = 0;  \
-        while (_uw_likely(*src_ptr != 0 && length--)) {  \
+        while (*src_ptr != 0 && length--) {  \
             char32_t c = read_utf8_char(&src_ptr);  \
-            if (_uw_likely(c != 0xFFFFFFFF)) {  \
+            if (c != 0xFFFFFFFF) {  \
                 *dest_ptr++ = c;  \
                 chars_copied++;  \
             }  \
@@ -1165,9 +1165,9 @@ STR_CP_FROM_U8_IMPL(uint32_t)
 static unsigned _cp_from_u8_uint24_t(uint8_t* self_ptr, uint8_t* src_ptr, unsigned length)
 {
     unsigned chars_copied = 0;
-    while (_uw_likely((*((uint8_t*) src_ptr)) && length--)) {
+    while ((*((uint8_t*) src_ptr)) && length--) {
         char32_t c = read_utf8_char(&src_ptr);
-        if (_uw_likely(c != 0xFFFFFFFF)) {
+        if (c != 0xFFFFFFFF) {
             _uw_put_char_uint24_t(self_ptr, c);
             self_ptr += 3;
             chars_copied++;
@@ -1293,7 +1293,7 @@ UwResult _uw_create_string_u32(char32_t* initializer)
 
 unsigned uw_strlen(UwValuePtr str)
 {
-    if (_uw_unlikely(uw_is_charptr(str))) {
+    if (uw_is_charptr(str)) {
         uint8_t char_size;
         return _uw_charptr_strlen2(str, &char_size);
     } else {
@@ -1426,7 +1426,7 @@ CStringPtr uw_string_to_utf8(UwValuePtr str)
 {
     CStringPtr result = nullptr;
 
-    if (_uw_unlikely(uw_is_charptr(str))) {
+    if (uw_is_charptr(str)) {
         switch (str->charptr_subtype) {
             case UW_CHARPTR: {
                 result = malloc(strlen((char*) str) + 1);
@@ -1472,7 +1472,7 @@ CStringPtr uw_string_to_utf8(UwValuePtr str)
 
 void uw_string_to_utf8_buf(UwValuePtr str, char* buffer)
 {
-    if (_uw_unlikely(uw_is_charptr(str))) {
+    if (uw_is_charptr(str)) {
         switch (str->charptr_subtype) {
             case UW_CHARPTR:
                 strcpy(buffer, (char*) str->charptr);
@@ -1500,7 +1500,7 @@ void uw_string_to_utf8_buf(UwValuePtr str, char* buffer)
 
 void uw_substr_to_utf8_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos, char* buffer)
 {
-    if (_uw_unlikely(uw_is_charptr(str))) {
+    if (uw_is_charptr(str)) {
         if (start_pos >= end_pos) {
             *buffer = 0;
             return;
@@ -1511,7 +1511,7 @@ void uw_substr_to_utf8_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos,
                 unsigned i = 0;
                 for(; i < start_pos; i++) {
                     char32_t c = read_utf8_char(&src_ptr);
-                    if (_uw_unlikely(c == 0xFFFFFFFF)) {
+                    if (c == 0xFFFFFFFF) {
                         continue;
                     }
                     if (c == 0) {
@@ -1521,7 +1521,7 @@ void uw_substr_to_utf8_buf(UwValuePtr str, unsigned start_pos, unsigned end_pos,
                 }
                 for(; i < end_pos; i++) {
                     char32_t c = read_utf8_char(&src_ptr);
-                    if (_uw_unlikely(c == 0xFFFFFFFF)) {
+                    if (c == 0xFFFFFFFF) {
                         continue;
                     }
                     if (c == 0) {
@@ -1598,7 +1598,7 @@ static bool append_u8(UwValuePtr dest, char8_t* src, unsigned src_len, uint8_t s
  * `src_len` contains the number of codepoints, not the number of bytes in `src`
  */
 {
-    if (_uw_unlikely(src_len == 0)) {
+    if (src_len == 0) {
         return true;
     }
     if (!expand_string(dest, src_len, src_char_size)) {
@@ -1638,7 +1638,7 @@ bool _uw_string_append_substring_u8(UwValuePtr dest, char8_t* src, unsigned src_
 
 static bool append_u32(UwValuePtr dest, char32_t* src, unsigned src_len, uint8_t src_char_size)
 {
-    if (_uw_unlikely(src_len == 0)) {
+    if (src_len == 0) {
         return true;
     }
     if (!expand_string(dest, src_len, src_char_size)) {
@@ -1678,7 +1678,7 @@ bool _uw_string_append_substring_u32(UwValuePtr dest, char32_t*  src, unsigned s
 
 static bool append_string(UwValuePtr dest, UwValuePtr src, unsigned src_start_pos, unsigned src_len)
 {
-    if (_uw_unlikely(src_len == 0)) {
+    if (src_len == 0) {
         return true;
     }
     if (!expand_string(dest, src_len, _uw_string_char_size(src))) {
@@ -1695,7 +1695,7 @@ static bool append_string(UwValuePtr dest, UwValuePtr src, unsigned src_start_po
 
 bool _uw_string_append(UwValuePtr dest, UwValuePtr src)
 {
-    if (_uw_unlikely(uw_is_charptr(src))) {
+    if (uw_is_charptr(src)) {
         switch (src->charptr_subtype) {
             case UW_CHARPTR:
                 return _uw_string_append_u8(dest, src->charptr);

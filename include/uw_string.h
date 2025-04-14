@@ -31,7 +31,7 @@ static inline uint8_t* _uw_string_start(UwValuePtr str)
  * Return pointer to the start of internal string data.
  */
 {
-    if (_uw_likely(str->str_embedded)) {
+    if (str->str_embedded) {
         return str->str_1;
     } else {
         return str->string_data->data;
@@ -44,7 +44,7 @@ static inline uint8_t* _uw_string_start_end(UwValuePtr str, uint8_t** end)
  * and write final pointer to `end`.
  */
 {
-    if (_uw_likely(str->str_embedded)) {
+    if (str->str_embedded) {
         *end = &str->str_1[str->str_embedded_length * _uw_string_char_size(str)];
         return str->str_1;
     } else {
@@ -60,7 +60,7 @@ static inline uint8_t* _uw_string_start_length(UwValuePtr str, unsigned* length)
  * and write length of string to `length`.
  */
 {
-   if (_uw_likely(str->str_embedded)) {
+   if (str->str_embedded) {
         *length = str->str_embedded_length;
         return str->str_1;
     } else {
@@ -76,12 +76,12 @@ static inline uint8_t* _uw_string_char_ptr(UwValuePtr str, unsigned position)
  */
 {
     unsigned offset = position * _uw_string_char_size(str);
-    if (_uw_likely(str->str_embedded)) {
-        if (_uw_likely(position < str->str_embedded_length)) {
+    if (str->str_embedded) {
+        if (position < str->str_embedded_length) {
             return &str->str_1[offset];
         }
     } else {
-        if (_uw_likely(position < str->str_length)) {
+        if (position < str->str_length) {
             return &str->string_data->data[offset];
         }
     }
@@ -147,12 +147,12 @@ static inline char32_t _uw_char_at(UwValuePtr str, unsigned position)
 {
     uint8_t char_size = _uw_string_char_size(str);
     unsigned offset = position * char_size;
-    if (_uw_likely(str->str_embedded)) {
-        if (_uw_likely(position < str->str_embedded_length)) {
+    if (str->str_embedded) {
+        if (position < str->str_embedded_length) {
             return _uw_get_char(&str->str_1[offset], char_size);
         }
     } else {
-        if (_uw_likely(position < str->str_length)) {
+        if (position < str->str_length) {
             return _uw_get_char(&str->string_data->data[offset], char_size);
         }
     }
