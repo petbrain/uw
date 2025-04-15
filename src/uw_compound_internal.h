@@ -31,13 +31,14 @@ struct __UwCompoundData {
      */
     _UwStructData struct_data;
 
+    bool destroying;  // set when destruction is in progress to bypass values during traversal
+
     /*
      * The minimal structure for tracking circular references
      * is capable to hold two pointers to parent values.
      *
      * For more back references a list is allocated.
      */
-    bool destroying;
     struct {
         union {
             ptrdiff_t using_parents_list: 1;    // given that pointers are aligned, we use least significant bit for the flag
