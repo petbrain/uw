@@ -336,8 +336,10 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
                     unsigned bytes_remaining = f->partial_utf8_len;
                     char32_t chr;
                     if (read_utf8_buffer(&ptr, &bytes_remaining, &chr)) {
-                        if (!uw_string_append(line, chr)) {
-                            return UwOOM();
+                        if (chr != 0xFFFFFFFF) {
+                            if (!uw_string_append(line, chr)) {
+                                return UwOOM();
+                            }
                         }
                         break;
                     }
