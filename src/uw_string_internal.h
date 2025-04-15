@@ -173,17 +173,11 @@ static inline char32_t read_utf8_char(char8_t** str)
 /*
  * Decode UTF-8 character from null-terminated string, update `*str`.
  *
- * Stop decoding if null character is encountered.
- *
- * Return decoded character, null, or 0xFFFFFFFF if UTF-8 sequence is invalid.
+ * Return decoded character or 0xFFFFFFFF if UTF-8 sequence is invalid.
  */
 {
     char8_t c = **str;
-    if (c == 0) {
-        return 0;
-    }
     (*str)++;
-
     if (c < 0x80) {
         return  c;
     }
