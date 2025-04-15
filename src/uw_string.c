@@ -1308,8 +1308,8 @@ unsigned uw_strlen(UwValuePtr str)
     return get_str_methods(a)->equal_##suffix(_uw_string_start(a), (type_name_b*) b, _uw_string_length(a));  \
 }
 
-bool _uw_equal_u8 (UwValuePtr a, char8_t* b)  STRING_EQ_IMPL(u8,   char8_t)
-bool _uw_equal_u32(UwValuePtr a, char32_t* b) STRING_EQ_IMPL(u32,  char32_t)
+bool _uw_equal_u8 (UwValuePtr a, char8_t* b)  STRING_EQ_IMPL(u8,  char8_t)
+bool _uw_equal_u32(UwValuePtr a, char32_t* b) STRING_EQ_IMPL(u32, char32_t)
 
 #define SUBSTRING_EQ_IMPL(suffix, type_name_b)  \
 {  \
