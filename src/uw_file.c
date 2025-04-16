@@ -112,11 +112,31 @@ static UwResult file_open(UwValuePtr self, UwValuePtr file_name, int flags, mode
         return UwError(UW_ERROR_FILE_ALREADY_OPENED);
     }
 
-    // open file
-    UW_CSTRING_LOCAL(filename_cstr, file_name);
-    do {
-        f->fd = open(filename_cstr, flags, mode);
-    } while (f->fd == -1 && errno == EINTR);
+    if (uw_is_charptr(file_name)) {
+        switch (file_name->charptr_subtype) {
+            case UW_CHARPTR:
+                do {
+                    f->fd = open((char*) file_name->charptr, flags, mode);
+                } while (f->fd == -1 && errno == EINTR);
+                break;
+
+            case UW_CHAR32PTR: {
+                UW_CSTRING_LOCAL(fname, file_name);
+                do {
+                    f->fd = open(fname, flags, mode);
+                } while (f->fd == -1 && errno == EINTR);
+                break;
+            }
+            default:
+                _uw_panic_bad_charptr_subtype(file_name);
+        }
+    } else {
+        uw_assert_string(file_name);
+        UW_CSTRING_LOCAL(fname, file_name);
+        do {
+            f->fd = open(fname, flags, mode);
+        } while (f->fd == -1 && errno == EINTR);
+    }
 
     if (f->fd == -1) {
         f->error = errno;
@@ -494,13 +514,10 @@ static void init_file_type()
 
 UwResult _uw_file_open(UwValuePtr file_name, int flags, mode_t mode)
 {
-    UwValue normalized_filename = uw_clone(file_name);  // this converts CharPtr to String
-    uw_return_if_error(&normalized_filename);
-
     UwValue file = uw_create(UwTypeId_File);
     uw_return_if_error(&file);
 
-    UwValue status = uw_interface(file.type_id, File)->open(&file, &normalized_filename, flags, mode);
+    UwValue status = uw_interface(file.type_id, File)->open(&file, file_name, flags, mode);
     uw_return_if_error(&status);
 
     return uw_move(&file);
