@@ -5,6 +5,7 @@
 #include <libpussy/mmarray.h>
 
 #include "include/uw_interfaces.h"
+#include "src/uw_interfaces_internal.h"
 
 typedef struct {
     char* name;
