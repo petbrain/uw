@@ -204,3 +204,33 @@ The length of string is always 32 bit wide, even on ILP64.
 * if a string is about to be modified and refcount is more than 1, a copy is created
   with refcount 1 and then modified in place.
 * string capacity is preserved on copy
+
+## Iterators
+
+Iterators are at the very early development stage.
+The only iterator at the moment is `LineReader` interface
+moved from `StringIO`.
+
+Basically, most iterables may have multiple iterators.
+Mind algorithms with nested loops iterating over same array or list.
+
+However, some iterables may support single iterator only.
+These are files and most kinds of streams that can be read
+only sequentially, without prior knowledge of size.
+
+Such iterators can be considered as singletons.
+Moreover, iterables that allow singleton iterators only,
+can provide iterator interfaces for self.
+
+There can be multiple versions of iterators for the same iterable.
+Back to files, `LineReader` is not the only possible iterator.
+There also can be `ByteReader` and `CharReader` and file iterable
+may provide all of them.
+
+Iterators that are separate from their iterables are represented
+by `UwType_Iterator` (TODO).
+This type contains iterator state and a clone of iterable value.
+
+Iterables must include `itercount` field that shows how many iterations
+are currently in progress.
+Methods that modify iterable must fail when this field is nonzero.
