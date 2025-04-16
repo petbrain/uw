@@ -39,6 +39,10 @@ void _uw_init_interfaces()
     if (!arena) {
         uw_panic("Cannot create arena\n");
     }
+
+    // register built-ion interfaces
+
+    uw_assert(UwInterfaceId_LineReader == uw_register_interface("LineReader", UwInterface_LineReader));
 }
 
 unsigned _uw_register_interface(char* name, unsigned num_methods)

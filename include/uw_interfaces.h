@@ -17,7 +17,11 @@ struct __UwInterface {
 };
 typedef struct __UwInterface _UwInterface;
 
-// Built-in interfaces
+/*
+ * Built-in interfaces
+ */
+#define UwInterfaceId_LineReader    0  // iterator interface
+
 /*
 // TBD, TODO
 #define UwInterfaceId_Logic         0
@@ -42,8 +46,6 @@ typedef struct __UwInterface _UwInterface;
     // UwMethodSlice
     // UwMethodDeleteRange
 */
-
-//#define UwInterfaceId_LineReader    0
 
 
 unsigned _uw_register_interface(char* name, unsigned num_methods);
