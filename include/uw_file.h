@@ -10,10 +10,20 @@ extern "C" {
 #endif
 
 extern UwTypeId UwTypeId_File;
+/*
+ * In addition to file-specific interfaces , this type also supports
+ * iterator interfaces and can be considered as a singleton iterator,
+ * comprised of both iterable and iterator.
+ *
+ * This means nested iterations aren't possible but they do not make
+ * sense for files either.
+ */
 
 /****************************************************************
  * File interface
  */
+
+extern unsigned UwInterfaceId_File;
 
 typedef UwResult (*UwMethodOpenFile)         (UwValuePtr self, UwValuePtr file_name, int flags, mode_t mode);
 typedef void     (*UwMethodCloseFile)        (UwValuePtr self);
@@ -36,6 +46,8 @@ typedef struct {
  * FileReader interface
  */
 
+extern unsigned UwInterfaceId_FileReader;
+
 typedef UwResult (*UwMethodReadFile)(UwValuePtr self, void* buffer, unsigned buffer_size, unsigned* bytes_read);
 
 typedef struct {
@@ -46,6 +58,8 @@ typedef struct {
 /****************************************************************
  * FileWriter interface
  */
+
+extern unsigned UwInterfaceId_FileWriter;
 
 typedef UwResult (*UwMethodWriteFile)(UwValuePtr self, void* data, unsigned size, unsigned* bytes_written);
 

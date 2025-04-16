@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "include/uw.h"
+#include "src/uw_iterators_internal.h"
 #include "src/uw_string_internal.h"
 #include "src/uw_struct_internal.h"
 
@@ -101,8 +102,10 @@ static bool file_equal(UwValuePtr self, UwValuePtr other)
 }
 
 /****************************************************************
- * File interface methods
+ * File interface
  */
+
+unsigned UwInterfaceId_File = UINT_MAX;
 
 static UwResult file_open(UwValuePtr self, UwValuePtr file_name, int flags, mode_t mode)
 {
@@ -211,8 +214,10 @@ static bool file_set_name(UwValuePtr self, UwValuePtr file_name)
 }
 
 /****************************************************************
- * FileReader interface methods
+ * FileReader interface
  */
+
+unsigned UwInterfaceId_FileReader = UINT_MAX;
 
 static UwResult file_read(UwValuePtr self, void* buffer, unsigned buffer_size, unsigned* bytes_read)
 {
@@ -232,8 +237,10 @@ static UwResult file_read(UwValuePtr self, void* buffer, unsigned buffer_size, u
 }
 
 /****************************************************************
- * FileWriter interface methods
+ * FileWriter interface
  */
+
+unsigned UwInterfaceId_FileWriter = UINT_MAX;
 
 static UwResult file_write(UwValuePtr self, void* data, unsigned size, unsigned* bytes_written)
 {
@@ -493,11 +500,12 @@ static_assert((sizeof(_UwStructData) & (alignof(_UwFile) - 1)) == 0);
 [[ gnu::constructor ]]
 static void init_file_type()
 {
+    _uw_init_iterators();
+
     // interfaces can be registered by any type in any order
-    if (UwInterfaceId_File == 0)       { UwInterfaceId_File       = uw_register_interface("File",       UwInterface_File); }
-    if (UwInterfaceId_FileReader == 0) { UwInterfaceId_FileReader = uw_register_interface("FileReader", UwInterface_FileReader); }
-    if (UwInterfaceId_FileWriter == 0) { UwInterfaceId_FileWriter = uw_register_interface("FileWriter", UwInterface_FileWriter); }
-    if (UwInterfaceId_LineReader == 0) { UwInterfaceId_LineReader = uw_register_interface("LineReader", UwInterface_LineReader); }
+    if (UwInterfaceId_File       == UINT_MAX) { UwInterfaceId_File       = uw_register_interface("File",       UwInterface_File); }
+    if (UwInterfaceId_FileReader == UINT_MAX) { UwInterfaceId_FileReader = uw_register_interface("FileReader", UwInterface_FileReader); }
+    if (UwInterfaceId_FileWriter == UINT_MAX) { UwInterfaceId_FileWriter = uw_register_interface("FileWriter", UwInterface_FileWriter); }
 
     UwTypeId_File = uw_add_type(
         &file_type,

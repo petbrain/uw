@@ -855,12 +855,6 @@ static UwType* basic_types[] = {
     [UwTypeId_Map]       = &_uw_map_type
 };
 
-// Miscellaneous interfaces
-unsigned UwInterfaceId_File = 0;
-unsigned UwInterfaceId_FileReader = 0;
-unsigned UwInterfaceId_FileWriter = 0;
-unsigned UwInterfaceId_LineReader = 0;
-
 [[ gnu::constructor ]]
 static void init_type_system()
 {

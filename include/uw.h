@@ -5,6 +5,7 @@
  */
 
 #include <uw_base.h>
+#include <uw_iterators.h>
 #include <uw_array.h>
 #include <uw_map.h>
 #include <uw_string.h>

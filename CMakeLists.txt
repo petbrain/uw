@@ -23,6 +23,7 @@ add_library(uw STATIC
     src/uw_datetime.c
     src/uw_file.c
     src/uw_hash.c
+    src/uw_iterators.c
     src/uw_map.c
     src/uw_netutils.c
     src/uw_status.c

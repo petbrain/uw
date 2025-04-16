@@ -462,12 +462,6 @@ extern UwType** _uw_types;
     // UwMethodDeleteRange
 */
 
-// Miscellaneous interfaces
-extern unsigned UwInterfaceId_File;
-extern unsigned UwInterfaceId_FileReader;
-extern unsigned UwInterfaceId_FileWriter;
-extern unsigned UwInterfaceId_LineReader;
-
 unsigned _uw_register_interface(char* name, unsigned num_methods);
 /*
  * Generate global identifier for interface and associate
