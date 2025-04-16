@@ -1,5 +1,5 @@
 #include "include/uw.h"
-#include "src/uw_iterators_internal.h"
+#include "src/uw_interfaces_internal.h"
 #include "src/uw_string_internal.h"
 #include "src/uw_struct_internal.h"
 
@@ -257,6 +257,7 @@ static_assert((sizeof(_UwStructData) & (alignof(_UwStringIO) - 1)) == 0);
 [[ gnu::constructor ]]
 static void init_stringio_type()
 {
+    _uw_init_interfaces();
     _uw_init_iterators();
 
     UwTypeId_StringIO = uw_add_type(

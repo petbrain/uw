@@ -4,7 +4,7 @@
  * Array internals.
  */
 
-#include "include/uw_base.h"
+#include "include/uw_types.h"
 #include "src/uw_compound_internal.h"
 
 #ifdef __cplusplus

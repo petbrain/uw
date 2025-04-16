@@ -1,5 +1,7 @@
 #include <string.h>
 
+#include "include/uw.h"
+
 #include "src/uw_compound_internal.h"
 #include "src/uw_struct_internal.h"
 

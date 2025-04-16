@@ -17,12 +17,14 @@ find_package(ICU COMPONENTS uc)
 add_library(uw STATIC
     src/uw_args.c
     src/uw_array.c
-    src/uw_base.c
+    src/uw_assert.c
     src/uw_charptr.c
     src/uw_compound.c
     src/uw_datetime.c
+    src/uw_dump.c
     src/uw_file.c
     src/uw_hash.c
+    src/uw_interfaces.c
     src/uw_iterators.c
     src/uw_map.c
     src/uw_netutils.c
@@ -31,6 +33,7 @@ add_library(uw STATIC
     src/uw_string_io.c
     src/uw_struct.c
     src/uw_to_json.c
+    src/uw_types.c
 )
 
 target_include_directories(uw PUBLIC . include libpussy)

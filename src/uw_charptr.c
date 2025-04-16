@@ -1,7 +1,7 @@
 #include <string.h>
 
-#include "include/uw_base.h"
-#include "include/uw_string.h"
+#include "include/uw.h"
+
 #include "src/uw_charptr_internal.h"
 #include "src/uw_string_internal.h"
 

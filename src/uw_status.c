@@ -3,13 +3,13 @@
 #   define _GNU_SOURCE
 #endif
 
+#include <stdlib.h>
 #include <string.h>
 
 #include <libpussy/mmarray.h>
 
-#include "include/uw_base.h"
-#include "include/uw_string.h"
-#include "uw_struct_internal.h"
+#include "include/uw.h"
+#include "src/uw_struct_internal.h"
 
 static char* basic_statuses[] = {
     [UW_SUCCESS]                   = "SUCCESS",

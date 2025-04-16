@@ -1,7 +1,6 @@
 #include <time.h>
 
 #include "include/uw.h"
-#include "include/uw_datetime.h"
 
 UwResult uw_monotonic()
 {

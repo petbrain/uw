@@ -1,102 +1,15 @@
-#include <string.h>
+#include <stdarg.h>
 
-#include <libpussy/allocator.h>  // for align_unsigned
-#include <libpussy/arena.h>
 #include <libpussy/mmarray.h>
 
-#include "include/uw_base.h"
-#include "include/uw_file.h"
-#include "include/uw_string.h"
-#include "src/uw_charptr_internal.h"
-#include "src/uw_hash_internal.h"
+#include "include/uw.h"
 #include "src/uw_array_internal.h"
-#include "src/uw_map_internal.h"
+#include "src/uw_charptr_internal.h"
+#include "src/uw_interfaces_internal.h"
 #include "src/uw_string_internal.h"
-
-/****************************************************************
- * Type system data
- */
 
 UwType** _uw_types = nullptr;
 static UwTypeId num_uw_types = 0;
-
-typedef struct {
-    char* name;
-    unsigned num_methods;
-} InterfaceInfo;
-
-static InterfaceInfo* registered_interfaces = nullptr;
-
-static Arena* arena = nullptr;  // arena for interfaces and other(?) data
-
-/****************************************************************
- * Basic functions
- */
-
-[[noreturn]]
-void uw_panic(char* fmt, ...)
-{
-    va_list ap;
-    va_start(ap);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    abort();
-}
-
-[[ noreturn ]]
-void _uw_panic_no_interface(UwTypeId type_id, unsigned interface_id)
-{
-    uw_panic("Interface %u is not defined for %s\n", interface_id, _uw_types[type_id]->name);
-}
-
-UwType_Hash uw_hash(UwValuePtr value)
-{
-    UwHashContext ctx;
-    _uw_hash_init(&ctx);
-    _uw_call_hash(value, &ctx);
-    return _uw_hash_finish(&ctx);
-}
-
-/****************************************************************
- * Dump functions.
- */
-
-void _uw_dump_start(FILE* fp, UwValuePtr value, int indent)
-{
-    char* type_name = uw_typeof(value)->name;
-
-    _uw_print_indent(fp, indent);
-    fprintf(fp, "%p", value);
-    if (type_name == nullptr) {
-        fprintf(fp, " BAD TYPE %d", value->type_id);
-    } else {
-        fprintf(fp, " %s (type id: %d)", type_name, value->type_id);
-    }
-}
-
-void _uw_print_indent(FILE* fp, int indent)
-{
-    for (int i = 0; i < indent; i++ ) {
-        fputc(' ', fp);
-    }
-}
-
-void _uw_dump(FILE* fp, UwValuePtr value, int first_indent, int next_indent, _UwCompoundChain* tail)
-{
-    if (value == nullptr) {
-        _uw_print_indent(fp, first_indent);
-        fprintf(fp, "nullptr\n");
-        return;
-    }
-    UwMethodDump fn_dump = uw_typeof(value)->dump;
-    uw_assert(fn_dump != nullptr);
-    fn_dump(value, fp, first_indent, next_indent, tail);
-}
-
-void uw_dump(FILE* fp, UwValuePtr value)
-{
-    _uw_dump(fp, value, 0, 0, nullptr);
-}
 
 /****************************************************************
  * Null type
@@ -856,8 +769,10 @@ static UwType* basic_types[] = {
 };
 
 [[ gnu::constructor ]]
-static void init_type_system()
+void _uw_init_types()
 {
+    _uw_init_interfaces();
+
     if (_uw_types) {
         return;
     }
@@ -871,197 +786,6 @@ static void init_type_system()
             uw_panic("Type %u is not defined\n", i);
         }
         _uw_types[i] = t;
-    }
-
-    registered_interfaces = mmarray_allocate(0, sizeof(InterfaceInfo));
-
-    arena = create_arena(0);
-    if (!arena) {
-        uw_panic("Cannot create arena\n");
-    }
-}
-
-#define MAX_INTERFACES  (UINT_MAX - 1)  // UINT_MAX equals to -1 which is used as terminator
-                                        // in uw_add_type and uw_subtype, that's why UINT_MAX - 1
-
-unsigned _uw_register_interface(char* name, unsigned num_methods)
-{
-    init_type_system();
-
-    unsigned n = mmarray_length(registered_interfaces);
-    if (n == MAX_INTERFACES) {
-        uw_panic("Cannot define more interfaces than %u\n", MAX_INTERFACES);
-    }
-    InterfaceInfo info = {
-        .name = name,
-        .num_methods = num_methods
-    };
-    registered_interfaces = mmarray_append_item(registered_interfaces, &info);
-    return n;
-}
-
-char* uw_get_interface_name(unsigned interface_id)
-{
-    unsigned n = mmarray_length(registered_interfaces);
-    if (interface_id >= n) {
-        uw_panic("Interfaces %u is not registered yet\n", interface_id);
-    }
-    return registered_interfaces[interface_id].name;
-}
-
-static unsigned get_num_interface_methods(unsigned interface_id)
-/*
- * Get the number of methods of interface.
- */
-{
-    unsigned n = mmarray_length(registered_interfaces);
-    if (interface_id >= n) {
-        uw_panic("Interfaces %u is not registered yet\n", interface_id);
-    }
-    return registered_interfaces[interface_id].num_methods;
-}
-
-static void alloc_interfaces(UwType* type)
-/*
- * Allocate type->interfaces.
- * type->num_interfaces must be initialized.
- */
-{
-    type->interfaces = arena_alloc(arena, type->num_interfaces, _UwInterface);
-    if (!type->interfaces) {
-        uw_panic("%s: cannot allocate memory block for %u interfaces for type %s\n",
-                 __func__, type->num_interfaces, type->name);
-    }
-}
-
-static inline unsigned methods_memsize(unsigned num_methods)
-/*
- * Return size of memory block in bytes to store pointers to interface methods.
- */
-{
-    return num_methods * (sizeof(void*) + sizeof(UwTypeId)) * 2;
-}
-
-static void** alloc_methods(unsigned num_methods)
-/*
- * Allocate memory block for pointers to interface methods.
- */
-{
-    unsigned memsize = methods_memsize(num_methods);
-    void** result = _arena_alloc(arena, memsize, alignof(void*));
-    if (!result) {
-        uw_panic("cannot allocate %u-bytes memory block for %u methods\n", memsize, num_methods);
-    }
-    return result;
-}
-
-static void** make_interface_methods(unsigned interface_id, void** methods)
-/*
- * Allocate memory block and copy `methods`, checking them for nullptr.
- */
-{
-    unsigned num_methods = get_num_interface_methods(interface_id);
-    void** interface_methods = alloc_methods(num_methods);
-    bzero(interface_methods, methods_memsize(num_methods));
-
-    for (unsigned i = 0; i < num_methods; i++) {
-        void* meth = methods[i];
-        if (meth) {
-            interface_methods[i] = meth;
-        } else {
-            uw_panic("Method %u for interface %s is not defined\n",
-                     i, uw_get_interface_name(interface_id));
-        }
-    }
-    return interface_methods;
-}
-
-static void init_interfaces(UwType* type, va_list ap)
-{
-    // count interface argument pairs
-    type->num_interfaces = 0;
-    va_list temp_ap;
-    va_copy(temp_ap, ap);
-    for (;;) {
-        unsigned interface_id = va_arg(temp_ap, unsigned);
-        if (((int) interface_id) == -1) {
-            break;
-        }
-        va_arg(temp_ap, void**);
-        type->num_interfaces++;
-    }
-    va_end(temp_ap);
-
-    if (type->num_interfaces == 0) {
-        type->interfaces = nullptr;
-        return;
-    }
-
-    // init interfaces
-    alloc_interfaces(type);
-    _UwInterface* iface = type->interfaces;
-    for (unsigned i = 0; i < type->num_interfaces; i++, iface++) {
-        iface->interface_id = va_arg(ap, unsigned);
-        iface->interface_methods = make_interface_methods(iface->interface_id, va_arg(ap, void**));
-    }
-}
-
-static void update_interfaces(UwType* type, UwType* ancestor, va_list ap)
-{
-    // count new interfaces, starting from existing
-    type->num_interfaces = ancestor->num_interfaces;
-    va_list temp_ap;
-    va_copy(temp_ap, ap);
-    for (;;) {
-        unsigned interface_id = va_arg(temp_ap, unsigned);
-        if (((int) interface_id) == -1) {
-            break;
-        }
-        va_arg(temp_ap, void**);
-        if (!_uw_has_interface(ancestor->id, interface_id)) {
-            type->num_interfaces++;
-        }
-    }
-    va_end(temp_ap);
-
-    if (type->num_interfaces == 0) {
-        type->interfaces = nullptr;
-        return;
-    }
-
-    // copy ancestor's interfaces
-    alloc_interfaces(type);
-    memcpy(type->interfaces, ancestor->interfaces, ancestor->num_interfaces * sizeof(_UwInterface));
-
-    // update interface methods
-    _UwInterface* new_iface = &type->interfaces[ancestor->num_interfaces];
-    for (;;) {
-        unsigned interface_id = va_arg(ap, unsigned);
-        if (((int) interface_id) == -1) {
-            break;
-        }
-        _UwInterface* src_iface = _uw_lookup_interface(ancestor->id, interface_id);
-        if (src_iface) {
-            // update existing interface
-            _UwInterface* dest_iface = _uw_lookup_interface(type->id, interface_id);
-            void** new_methods = va_arg(ap, void**);
-            unsigned num_methods = get_num_interface_methods(interface_id);
-            void** interface_methods = alloc_methods(num_methods);
-            memcpy(interface_methods, src_iface->interface_methods, methods_memsize(num_methods));
-
-            for (unsigned i = 0; i < num_methods; i++) {
-                void* meth = new_methods[i];
-                if (meth) {
-                    interface_methods[i] = meth;
-                }
-            }
-            dest_iface->interface_methods = interface_methods;
-        } else {
-            // add new interface
-            new_iface->interface_id = interface_id;
-            new_iface->interface_methods = make_interface_methods(interface_id, va_arg(ap, void**));
-            new_iface++;
-        }
     }
 }
 
@@ -1079,7 +803,7 @@ static UwTypeId add_type(UwType* type)
 UwTypeId _uw_add_type(UwType* type, ...)
 {
     // the order constructor are called is undefined, make sure the type system is initialized
-    init_type_system();
+    _uw_init_types();
 
     // add type
 
@@ -1087,7 +811,7 @@ UwTypeId _uw_add_type(UwType* type, ...)
 
     va_list ap;
     va_start(ap);
-    init_interfaces(type, ap);
+    _uw_create_interfaces(type, ap);
     va_end(ap);
 
     return type_id;
@@ -1097,7 +821,7 @@ UwTypeId _uw_subtype(UwType* type, char* name, UwTypeId ancestor_id,
                      unsigned data_size, unsigned alignment, ...)
 {
     // the order constructor are called is undefined, make sure the type system is initialized
-    init_type_system();
+    _uw_init_types();
 
     uw_assert(ancestor_id != UwTypeId_Null);
 
@@ -1116,7 +840,7 @@ UwTypeId _uw_subtype(UwType* type, char* name, UwTypeId ancestor_id,
 
     va_list ap;
     va_start(ap);
-    update_interfaces(type, ancestor, ap);
+    _uw_update_interfaces(type, ancestor, ap);
     va_end(ap);
 
     return type_id;
@@ -1132,7 +856,7 @@ void uw_dump_types(FILE* fp)
         if (t->num_interfaces) {
             _UwInterface* iface = t->interfaces;
             for (unsigned j = 0; j < t->num_interfaces; j++, iface++) {
-                unsigned num_methods = get_num_interface_methods(iface->interface_id);
+                unsigned num_methods = _uw_get_num_interface_methods(iface->interface_id);
                 void** methods = iface->interface_methods;
                 fprintf(fp, "    interface %u (%s):\n        ",
                         iface->interface_id, uw_get_interface_name(iface->interface_id));

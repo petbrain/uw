@@ -1,7 +1,8 @@
 #include <arpa/inet.h>
+#include <stdlib.h>
 
-#include <include/uw_netutils.h>
-#include <src/uw_struct_internal.h>
+#include "include/uw_netutils.h"
+#include "src/uw_struct_internal.h"
 
 uint16_t UW_ERROR_BAD_ADDRESS_FAMILY = 0;
 uint16_t UW_ERROR_BAD_IP_ADDRESS = 0;

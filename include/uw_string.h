@@ -2,6 +2,9 @@
 
 #include <ctype.h>
 
+#include <uw_assert.h>
+#include <uw_types.h>
+
 #ifdef UW_WITH_ICU
     // ICU library for character classification:
 #   include <unicode/uchar.h>
@@ -174,11 +177,6 @@ bool _uw_equal_u32(UwValuePtr a, char32_t* b);
 unsigned uw_strlen(UwValuePtr str);
 /*
  * Return length of string.
- */
-
-CStringPtr uw_string_to_utf8(UwValuePtr str);
-/*
- * Create C string.
  */
 
 void uw_string_to_utf8_buf(UwValuePtr str, char* buffer);
@@ -677,6 +675,28 @@ UwResult uw_string_to_float(UwValuePtr str);
         static_assert((len) <= UW_LENGTH(v.str_4));  \
         v;  \
     })
+
+/****************************************************************
+ * C strings
+ */
+
+typedef char* CStringPtr;
+
+// automatically cleaned value
+#define CString [[ gnu::cleanup(uw_destroy_cstring) ]] CStringPtr
+
+// somewhat ugly macro to define a local variable initialized with a copy of uw string:
+#define UW_CSTRING_LOCAL(variable_name, uw_str) \
+    char variable_name[uw_strlen_in_utf8(uw_str) + 1]; \
+    uw_string_to_utf8_buf((uw_str), variable_name)
+
+CStringPtr uw_string_to_utf8(UwValuePtr str);
+/*
+ * Create C string.
+ */
+
+void uw_destroy_cstring(CStringPtr* str);
+
 
 #ifdef __cplusplus
 }

@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <string.h>
 
 #include "include/uw.h"

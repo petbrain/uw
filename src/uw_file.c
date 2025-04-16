@@ -1,10 +1,11 @@
 #include <errno.h>
+#include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "include/uw.h"
-#include "src/uw_iterators_internal.h"
+#include "src/uw_interfaces_internal.h"
 #include "src/uw_string_internal.h"
 #include "src/uw_struct_internal.h"
 
@@ -31,7 +32,7 @@ typedef struct {
 
 // forward declarations
 static void file_close(UwValuePtr self);
-static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line);
+static void stop_read_lines(UwValuePtr self);
 
 /****************************************************************
  * Basic interface methods
@@ -160,7 +161,11 @@ static UwResult file_open(UwValuePtr self, UwValuePtr file_name, int flags, mode
 
 static void file_close(UwValuePtr self)
 {
+    // XXX check if iteration is in progress
+
     _UwFile* f = get_data_ptr(self);
+
+    stop_read_lines(self);
 
     if (f->fd != -1 && !f->is_external_fd) {
         close(f->fd);
@@ -168,17 +173,13 @@ static void file_close(UwValuePtr self)
     f->fd = -1;
     f->error = 0;
     uw_destroy(&f->name);
-
-    if (f->buffer) {
-        free(f->buffer);
-        f->buffer = nullptr;
-    }
-    uw_destroy(&f->pushback);
 }
 
 static bool file_set_fd(UwValuePtr self, int fd)
 {
     _UwFile* f = get_data_ptr(self);
+
+    // XXX check if iteration is in progress
 
     if (f->fd != -1) {
         // fd already set
@@ -200,6 +201,8 @@ static UwResult file_get_name(UwValuePtr self)
 static bool file_set_name(UwValuePtr self, UwValuePtr file_name)
 {
     _UwFile* f = get_data_ptr(self);
+
+    // XXX check if iteration is in progress
 
     if (f->fd != -1 && !f->is_external_fd) {
         // not an externally set fd
@@ -223,6 +226,8 @@ static UwResult file_read(UwValuePtr self, void* buffer, unsigned buffer_size, u
 {
     _UwFile* f = get_data_ptr(self);
 
+    // XXX check if iteration is in progress
+
     ssize_t result;
     do {
         result = read(f->fd, buffer, buffer_size);
@@ -245,6 +250,8 @@ unsigned UwInterfaceId_FileWriter = UINT_MAX;
 static UwResult file_write(UwValuePtr self, void* data, unsigned size, unsigned* bytes_written)
 {
     _UwFile* f = get_data_ptr(self);
+
+    // XXX check if iteration is in progress
 
     ssize_t result;
     do {
@@ -270,7 +277,7 @@ static UwResult start_read_lines(UwValuePtr self)
     uw_destroy(&f->pushback);
 
     if (f->buffer == nullptr) {
-        f->buffer = malloc(LINE_READER_BUFFER_SIZE);
+        f->buffer = allocate(LINE_READER_BUFFER_SIZE, false);
         if (!f->buffer) {
             return UwOOM();
         }
@@ -287,16 +294,6 @@ static UwResult start_read_lines(UwValuePtr self)
     }
     f->line_number = 0;
     return UwOK();
-}
-
-static UwResult read_line(UwValuePtr self)
-{
-    UwValue result = UwString();
-    if (uw_ok(&result)) {
-        UwValue status = read_line_inplace(self, &result);
-        uw_return_if_error(&status);
-    }
-    return uw_move(&result);
 }
 
 static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
@@ -411,6 +408,16 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
     } while(true);
 }
 
+static UwResult read_line(UwValuePtr self)
+{
+    UwValue result = UwString();
+    if (uw_ok(&result)) {
+        UwValue status = read_line_inplace(self, &result);
+        uw_return_if_error(&status);
+    }
+    return uw_move(&result);
+}
+
 static bool unread_line(UwValuePtr self, UwValuePtr line)
 {
     _UwFile* f = get_data_ptr(self);
@@ -433,7 +440,7 @@ static void stop_read_lines(UwValuePtr self)
 {
     _UwFile* f = get_data_ptr(self);
 
-    free(f->buffer);
+    release((void**) &f->buffer, LINE_READER_BUFFER_SIZE);
     f->buffer = nullptr;
     uw_destroy(&f->pushback);
 }
@@ -500,6 +507,8 @@ static_assert((sizeof(_UwStructData) & (alignof(_UwFile) - 1)) == 0);
 [[ gnu::constructor ]]
 static void init_file_type()
 {
+    _uw_init_types();
+    _uw_init_interfaces();
     _uw_init_iterators();
 
     // interfaces can be registered by any type in any order

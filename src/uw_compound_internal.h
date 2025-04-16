@@ -1,6 +1,6 @@
 #pragma once
 
-#include "include/uw_base.h"
+#include "include/uw_types.h"
 
 #ifdef __cplusplus
 extern "C" {

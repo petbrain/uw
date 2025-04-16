@@ -1,29 +1,100 @@
 #pragma once
 
-#include <limits.h>
-#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <uchar.h>
 
 #include <libpussy/allocator.h>
+
+#include <uw_helpers.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// automatically cleaned value
+#define _UW_VALUE_CLEANUP [[ gnu::cleanup(uw_destroy) ]]
+#define UwValue _UW_VALUE_CLEANUP _UwValue
 
-#define UW_LENGTH(array)  (sizeof(array) / sizeof((array)[0]))  // get array length
+// Built-in types
+#define UwTypeId_Null        0
+#define UwTypeId_Bool        1U
+#define UwTypeId_Int         2U  // abstract integer
+#define UwTypeId_Signed      3U  // subtype of int, signed integer
+#define UwTypeId_Unsigned    4U  // subtype of int, unsigned integer
+#define UwTypeId_Float       5U
+#define UwTypeId_DateTime    6U
+#define UwTypeId_Timestamp   7U
+#define UwTypeId_Ptr         8U  // container for void*
+#define UwTypeId_CharPtr     9U  // container for pointers to static C strings
+#define UwTypeId_String     10U
+#define UwTypeId_Struct     11U  // the base for reference counted data
+#define UwTypeId_Compound   12U  // the base for values that may contain circular references
+#define UwTypeId_Status     13U  // value_data is optional
+#define UwTypeId_Array      14U
+#define UwTypeId_Map        15U
 
-// branch optimization hints
-#define _uw_likely(x)    __builtin_expect(!!(x), 1)
-#define _uw_unlikely(x)  __builtin_expect(!!(x), 0)
+// char* sub-types
+#define UW_CHARPTR    0
+#define UW_CHAR32PTR  1
 
-/****************************************************************
- * UwValue
- */
+// limits
+#define UW_SIGNED_MAX  0x7fff'ffff'ffff'ffffLL
+#define UW_UNSIGNED_MAX  0xffff'ffff'ffff'ffffULL
+
+// type checking
+#define uw_is_null(value)      uw_is_subtype((value), UwTypeId_Null)
+#define uw_is_bool(value)      uw_is_subtype((value), UwTypeId_Bool)
+#define uw_is_int(value)       uw_is_subtype((value), UwTypeId_Int)
+#define uw_is_signed(value)    uw_is_subtype((value), UwTypeId_Signed)
+#define uw_is_unsigned(value)  uw_is_subtype((value), UwTypeId_Unsigned)
+#define uw_is_float(value)     uw_is_subtype((value), UwTypeId_Float)
+#define uw_is_datetime(value)  uw_is_subtype((value), UwTypeId_DateTime)
+#define uw_is_timestamp(value) uw_is_subtype((value), UwTypeId_Timestamp)
+#define uw_is_ptr(value)       uw_is_subtype((value), UwTypeId_Ptr)
+#define uw_is_charptr(value)   uw_is_subtype((value), UwTypeId_CharPtr)
+#define uw_is_string(value)    uw_is_subtype((value), UwTypeId_String)
+#define uw_is_struct(value)    uw_is_subtype((value), UwTypeId_Struct)
+#define uw_is_compound(value)  uw_is_subtype((value), UwTypeId_Compound)
+#define uw_is_status(value)    uw_is_subtype((value), UwTypeId_Status)
+#define uw_is_array(value)     uw_is_subtype((value), UwTypeId_Array)
+#define uw_is_map(value)       uw_is_subtype((value), UwTypeId_Map)
+#define uw_is_file(value)      uw_is_subtype((value), UwTypeId_File)
+#define uw_is_stringio(value)  uw_is_subtype((value), UwTypeId_StringIO)
+
+#define uw_assert_null(value)      uw_assert(uw_is_null    (value))
+#define uw_assert_bool(value)      uw_assert(uw_is_bool    (value))
+#define uw_assert_int(value)       uw_assert(uw_is_int     (value))
+#define uw_assert_signed(value)    uw_assert(uw_is_signed  (value))
+#define uw_assert_unsigned(value)  uw_assert(uw_is_unsigned(value))
+#define uw_assert_float(value)     uw_assert(uw_is_float   (value))
+#define uw_assert_datetime(value)  uw_assert(uw_is_datetime(value))
+#define uw_assert_timestamp(value) uw_assert(uw_is_timestamp(value))
+#define uw_assert_ptr(value)       uw_assert(uw_is_ptr     (value))
+#define uw_assert_charptr(value)   uw_assert(uw_is_charptr (value))
+#define uw_assert_string(value)    uw_assert(uw_is_string  (value))
+#define uw_assert_struct(value)    uw_assert(uw_is_struct  (value))
+#define uw_assert_compound(value)  uw_assert(uw_is_compound(value))
+#define uw_assert_status(value)    uw_assert(uw_is_status  (value))
+#define uw_assert_array(value)     uw_assert(uw_is_array   (value))
+#define uw_assert_map(value)       uw_assert(uw_is_map     (value))
+#define uw_assert_file(value)      uw_assert(uw_is_file    (value))
+#define uw_assert_stringio(value)  uw_assert(uw_is_stringio(value))
+
+// forward declarations
+
+// defined in uw_status.h
+struct __UwStatusData;
+
+// defined in uw_interfaces.h
+struct __UwInterface;
+typedef struct __UwInterface _UwInterface;
+
+// defined privately in src/uw_hash.c:
+struct _UwHashContext;
+typedef struct _UwHashContext UwHashContext;
+
 
 // Type for type id.
 typedef uint16_t UwTypeId;
@@ -34,9 +105,6 @@ typedef bool       UwType_Bool;
 typedef int64_t    UwType_Signed;
 typedef uint64_t   UwType_Unsigned;
 typedef double     UwType_Float;
-
-#define UW_SIGNED_MAX  0x7fff'ffff'ffff'ffffLL
-#define UW_UNSIGNED_MAX  0xffff'ffff'ffff'ffffULL
 
 typedef struct {
     unsigned refcount;
@@ -55,9 +123,6 @@ typedef struct {
         void* padding;
     };
 } _UwStructData;
-
-// forward declaration
-struct __UwStatusData;
 
 // make sure largest C type fits into 64 bits
 static_assert( sizeof(long long) <= sizeof(uint64_t) );
@@ -182,17 +247,10 @@ union __UwValue {
     };
 
 };
-
 typedef union __UwValue _UwValue;
 
-struct __UwStatusData {
-    unsigned refcount;
-    unsigned line_number;
-    char* file_name;
-    _UwValue description;  // string
-};
-typedef struct __UwStatusData _UwStatusData;
-
+typedef _UwValue* UwValuePtr;
+typedef _UwValue  UwResult;  // alias for return values
 
 // make sure _UwValue structure is correct
 static_assert( offsetof(_UwValue, charptr_subtype) == 2 );
@@ -211,79 +269,15 @@ static_assert( offsetof(_UwValue, str_4) == 4 );
 
 static_assert( sizeof(_UwValue) == 16 );
 
-typedef _UwValue* UwValuePtr;
-typedef _UwValue  UwResult;  // alias for return values
 
-// automatically cleaned value
-#define _UW_VALUE_CLEANUP [[ gnu::cleanup(uw_destroy) ]]
-#define UwValue _UW_VALUE_CLEANUP _UwValue
+struct __UwStatusData {
+    unsigned refcount;
+    unsigned line_number;
+    char* file_name;
+    _UwValue description;  // string
+};
+typedef struct __UwStatusData _UwStatusData;
 
-// Built-in types
-#define UwTypeId_Null        0
-#define UwTypeId_Bool        1U
-#define UwTypeId_Int         2U  // abstract integer
-#define UwTypeId_Signed      3U  // subtype of int, signed integer
-#define UwTypeId_Unsigned    4U  // subtype of int, unsigned integer
-#define UwTypeId_Float       5U
-#define UwTypeId_DateTime    6U
-#define UwTypeId_Timestamp   7U
-#define UwTypeId_Ptr         8U  // container for void*
-#define UwTypeId_CharPtr     9U  // container for pointers to static C strings
-#define UwTypeId_String     10U
-#define UwTypeId_Struct     11U  // the base for reference counted data
-#define UwTypeId_Compound   12U  // the base for values that may contain circular references
-#define UwTypeId_Status     13U  // value_data is optional
-#define UwTypeId_Array      14U
-#define UwTypeId_Map        15U
-
-// char* sub-types
-#define UW_CHARPTR    0
-#define UW_CHAR32PTR  1
-
-/****************************************************************
- * Assertions and panic
- *
- * Unlike assertions from standard library they cannot be
- * turned off and can be used for input parameters validation.
- */
-
-#define uw_assert(condition) \
-    ({  \
-        if (_uw_unlikely( !(condition) )) {  \
-            uw_panic("UW assertion failed at %s:%s:%d: " #condition "\n", __FILE__, __func__, __LINE__);  \
-        }  \
-    })
-
-[[noreturn]]
-void uw_panic(char* fmt, ...);
-
-[[noreturn]]
-void _uw_panic_bad_charptr_subtype(UwValuePtr v);
-
-[[ noreturn ]]
-void _uw_panic_no_interface(UwTypeId type_id, unsigned interface_id);
-
-[[ noreturn ]]
-void _uw_panic_bad_char_size(uint8_t char_size);
-
-
-/****************************************************************
- * Hash functions
- */
-
-typedef uint64_t  UwType_Hash;
-
-struct _UwHashContext;
-typedef struct _UwHashContext UwHashContext;
-
-void _uw_hash_uint64(UwHashContext* ctx, uint64_t data);
-void _uw_hash_buffer(UwHashContext* ctx, void* buffer, size_t length);
-void _uw_hash_string(UwHashContext* ctx, char* str);
-void _uw_hash_string32(UwHashContext* ctx, char32_t* str);
-
-/****************************************************************
- * Types and interfaces
- */
 
 struct __UwCompoundChain {
     /*
@@ -295,7 +289,6 @@ struct __UwCompoundChain {
     struct __UwCompoundChain* prev;
     UwValuePtr value;
 };
-
 typedef struct __UwCompoundChain _UwCompoundChain;
 
 // Function types for the basic interface.
@@ -315,14 +308,11 @@ typedef bool     (*UwMethodEqual)   (UwValuePtr self, UwValuePtr other);
 typedef UwResult (*UwMethodInit)(UwValuePtr self, void* ctor_args);
 typedef void     (*UwMethodFini)(UwValuePtr self);
 
-typedef struct {
-    unsigned interface_id;
-    void** interface_methods;  // pointer to array of pointers to functions,
-                               // uw_interface casts this to pointer to interface structure
-} _UwInterface;
-
 
 typedef struct {
+    /*
+     * UW type
+     */
     UwTypeId id;
     UwTypeId ancestor_id;
     char* name;
@@ -363,69 +353,18 @@ typedef struct {
     _UwInterface* interfaces;
 } UwType;
 
-// type checking
-#define uw_is_null(value)      uw_is_subtype((value), UwTypeId_Null)
-#define uw_is_bool(value)      uw_is_subtype((value), UwTypeId_Bool)
-#define uw_is_int(value)       uw_is_subtype((value), UwTypeId_Int)
-#define uw_is_signed(value)    uw_is_subtype((value), UwTypeId_Signed)
-#define uw_is_unsigned(value)  uw_is_subtype((value), UwTypeId_Unsigned)
-#define uw_is_float(value)     uw_is_subtype((value), UwTypeId_Float)
-#define uw_is_datetime(value)  uw_is_subtype((value), UwTypeId_DateTime)
-#define uw_is_timestamp(value) uw_is_subtype((value), UwTypeId_Timestamp)
-#define uw_is_ptr(value)       uw_is_subtype((value), UwTypeId_Ptr)
-#define uw_is_charptr(value)   uw_is_subtype((value), UwTypeId_CharPtr)
-#define uw_is_string(value)    uw_is_subtype((value), UwTypeId_String)
-#define uw_is_struct(value)    uw_is_subtype((value), UwTypeId_Struct)
-#define uw_is_compound(value)  uw_is_subtype((value), UwTypeId_Compound)
-#define uw_is_status(value)    uw_is_subtype((value), UwTypeId_Status)
-#define uw_is_array(value)     uw_is_subtype((value), UwTypeId_Array)
-#define uw_is_map(value)       uw_is_subtype((value), UwTypeId_Map)
-#define uw_is_file(value)      uw_is_subtype((value), UwTypeId_File)
-#define uw_is_stringio(value)  uw_is_subtype((value), UwTypeId_StringIO)
 
-#define uw_assert_null(value)      uw_assert(uw_is_null    (value))
-#define uw_assert_bool(value)      uw_assert(uw_is_bool    (value))
-#define uw_assert_int(value)       uw_assert(uw_is_int     (value))
-#define uw_assert_signed(value)    uw_assert(uw_is_signed  (value))
-#define uw_assert_unsigned(value)  uw_assert(uw_is_unsigned(value))
-#define uw_assert_float(value)     uw_assert(uw_is_float   (value))
-#define uw_assert_datetime(value)  uw_assert(uw_is_datetime(value))
-#define uw_assert_timestamp(value) uw_assert(uw_is_timestamp(value))
-#define uw_assert_ptr(value)       uw_assert(uw_is_ptr     (value))
-#define uw_assert_charptr(value)   uw_assert(uw_is_charptr (value))
-#define uw_assert_string(value)    uw_assert(uw_is_string  (value))
-#define uw_assert_struct(value)    uw_assert(uw_is_struct  (value))
-#define uw_assert_compound(value)  uw_assert(uw_is_compound(value))
-#define uw_assert_status(value)    uw_assert(uw_is_status  (value))
-#define uw_assert_array(value)     uw_assert(uw_is_array   (value))
-#define uw_assert_map(value)       uw_assert(uw_is_map     (value))
-#define uw_assert_file(value)      uw_assert(uw_is_file    (value))
-#define uw_assert_stringio(value)  uw_assert(uw_is_stringio(value))
-
+void _uw_init_types();
 /*
- * Argument validation macro:
+ * Initialize types.
+ * Declared with [[ gnu::constructor ]] attribute and automatically called
+ * before main().
+ *
+ * However, the order of initialization is undefined and other modules
+ * that must call it explicitly from their constructors.
+ *
+ * This function is idempotent.
  */
-#define uw_expect(value_type, arg)  \
-    do {  \
-        if (!uw_is_##value_type(_Generic((arg),  \
-                _UwValue:   &(arg), \
-                UwValuePtr: (arg)   \
-            ))) {  \
-            if (uw_error(_Generic((arg),  \
-                    _UwValue:   &(arg), \
-                    UwValuePtr: (arg)))) {  \
-                return _Generic((arg),  \
-                    _UwValue:   uw_move, \
-                    UwValuePtr: uw_clone  \
-                )(_Generic((arg),  \
-                    _UwValue:   &(arg), \
-                    UwValuePtr: arg  \
-                ));  \
-            }  \
-            return UwError(UW_ERROR_INCOMPATIBLE_TYPE);  \
-        }  \
-    } while (false)
-
 
 extern UwType** _uw_types;
 /*
@@ -436,98 +375,19 @@ extern UwType** _uw_types;
 
 #define uw_ancestor_of(type_id) (_uw_types[_uw_types[type_id]->ancestor_id])
 
-// Built-in interfaces
-/*
-// TBD, TODO
-#define UwInterfaceId_Logic         0
-    // TBD
-#define UwInterfaceId_Arithmetic    1
-    // TBD
-#define UwInterfaceId_Bitwise       2
-    // TBD
-#define UwInterfaceId_Comparison    3
-    // UwMethodCompare  -- compare_sametype, compare;
-#define UwInterfaceId_RandomAccess  4
-    // UwMethodLength
-    // UwMethodGetItem     (by index for arrays/strings or by key for maps)
-    // UwMethodSetItem     (by index for arrays/strings or by key for maps)
-    // UwMethodDeleteItem  (by index for arrays/strings or by key for maps)
-    // UwMethodPopItem -- necessary here? it's just delete_item(length - 1)
-#define UwInterfaceId_String        5
-    // TBD substring, truncate, trim, append_substring, etc
-#define UwInterfaceId_Array          6
-    // string supports this interface
-    // UwMethodAppend
-    // UwMethodSlice
-    // UwMethodDeleteRange
-*/
-
-unsigned _uw_register_interface(char* name, unsigned num_methods);
-/*
- * Generate global identifier for interface and associate
- * `name` and `num_methods` with it.
- *
- * The number of methods is used to initialize interface fields
- * in `_uw_add_type` and `_uw_subtype` functions.
- */
-
-#define uw_register_interface(name, interface_type)  \
-    _uw_register_interface((name), sizeof(interface_type) / sizeof(void*))
-
-char* uw_get_interface_name(unsigned interface_id);
-/*
- * Get registered interface name by id.
- */
-
-static inline _UwInterface* _uw_lookup_interface(UwTypeId type_id, unsigned interface_id)
+static inline bool uw_is_subtype(UwValuePtr value, UwTypeId type_id)
 {
-    UwType* type = _uw_types[type_id];
-    _UwInterface* iface = type->interfaces;
-    if (iface) {
-        unsigned i = 0;
-        do {
-            if (iface->interface_id == interface_id) {
-                return iface;
-            }
-            iface++;
-            i++;
-        } while (i < type->num_interfaces);
+    UwTypeId t = value->type_id;
+    for (;;) {
+        if (_uw_likely(t == type_id)) {
+            return true;
+        }
+        t = _uw_types[t]->ancestor_id;
+        if (_uw_likely(t == UwTypeId_Null)) {
+            return false;
+        }
     }
-    return nullptr;
 }
-
-static inline void* _uw_get_interface(UwTypeId type_id, unsigned interface_id)
-{
-    _UwInterface* result = _uw_lookup_interface(type_id, interface_id);
-    if (result) {
-        return result->interface_methods;
-    }
-    _uw_panic_no_interface(type_id, interface_id);
-}
-
-static inline bool _uw_has_interface(UwTypeId type_id, unsigned interface_id)
-{
-    return (bool) _uw_lookup_interface(type_id, interface_id);
-}
-
-/*
- * The following macro depends on naming scheme where
- * interface structure is named UwInterface_<interface_name>
- * and id is named UwInterfaceId_<interface_name>
- *
- * Example use:
- *
- * uw_interface(reader->type_id, LineReader)->read_line(reader);
- *
- * Calling super method:
- *
- * uw_interface(UwTypeId_AncestorOfReader, LineReader)->read_line(reader);
- */
-#define uw_interface(type_id, interface_name)  \
-    (  \
-        (UwInterface_##interface_name *)  \
-            _uw_get_interface((type_id), UwInterfaceId_##interface_name)  \
-    )
 
 UwTypeId _uw_add_type(UwType* type, ...);
 #define uw_add_type(type, ...)  _uw_add_type((type) __VA_OPT__(,) __VA_ARGS__, -1)
@@ -570,20 +430,6 @@ UwTypeId _uw_subtype(UwType* type, char* name, UwTypeId ancestor_id,
  * All errors in this function are considered as critical and cause program abort.
  */
 
-static inline bool uw_is_subtype(UwValuePtr value, UwTypeId type_id)
-{
-    UwTypeId t = value->type_id;
-    for (;;) {
-        if (_uw_likely(t == type_id)) {
-            return true;
-        }
-        t = _uw_types[t]->ancestor_id;
-        if (_uw_likely(t == UwTypeId_Null)) {
-            return false;
-        }
-    }
-}
-
 #define uw_get_type_name(v) _Generic((v),        \
                   char: _uw_get_type_name_by_id, \
          unsigned char: _uw_get_type_name_by_id, \
@@ -602,102 +448,6 @@ static inline char* _uw_get_type_name_by_id     (uint8_t type_id)  { return _uw_
 static inline char* _uw_get_type_name_from_value(UwValuePtr value) { return _uw_types[value->type_id]->name; }
 
 void uw_dump_types(FILE* fp);
-
-/****************************************************************
- * Statuses
- */
-
-#define UW_SUCCESS                    0
-#define UW_STATUS_VA_END              1  // used as a terminator for variadic arguments
-#define UW_ERROR_ERRNO                2
-#define UW_ERROR_OOM                  3
-#define UW_ERROR_NOT_IMPLEMENTED      4
-#define UW_ERROR_INCOMPATIBLE_TYPE    5
-#define UW_ERROR_EOF                  6
-#define UW_ERROR_INDEX_OUT_OF_RANGE   7
-
-// array errors
-#define UW_ERROR_EXTRACT_FROM_EMPTY_ARRAY  8
-
-// map errors
-#define UW_ERROR_KEY_NOT_FOUND        9
-
-// File errors
-#define UW_ERROR_FILE_ALREADY_OPENED  10
-#define UW_ERROR_NOT_REGULAR_FILE     11
-
-// StringIO errors
-#define UW_ERROR_UNREAD_FAILED        12
-
-uint16_t uw_define_status(char* status);
-/*
- * Define status in the global table.
- * Return status code or UW_ERROR_OOM
- *
- * This function should be called from the very beginning of main() function
- * or from constructors that are called before main().
- */
-
-char* uw_status_str(uint16_t status_code);
-/*
- * Get status string by status code.
- */
-
-static inline bool uw_ok(UwValuePtr status)
-{
-    if (!status) {
-        return false;
-    }
-    if (!uw_is_status(status)) {
-        // any other type means okay
-        return true;
-    }
-    return !status->is_error;
-}
-
-static inline bool uw_error(UwValuePtr status)
-{
-    return !uw_ok(status);
-}
-
-#define uw_return_if_error(value_ptr)  \
-    do {  \
-        if (uw_error(value_ptr)) {  \
-            return uw_move(value_ptr);  \
-        }  \
-    } while (false)
-
-static inline bool uw_eof(UwValuePtr status)
-{
-    if (!status) {
-        return false;
-    }
-    if (!uw_is_status(status)) {
-        return false;
-    }
-    return status->status_code == UW_ERROR_EOF;
-}
-
-static inline bool uw_va_end(UwValuePtr status)
-{
-    if (!status) {
-        return false;
-    }
-    if (!uw_is_status(status)) {
-        return false;
-    }
-    return status->status_code == UW_STATUS_VA_END;
-}
-
-void _uw_set_status_location(UwValuePtr status, char* file_name, unsigned line_number);
-void _uw_set_status_desc(UwValuePtr status, char* fmt, ...);
-void _uw_set_status_desc_ap(UwValuePtr status, char* fmt, va_list ap);
-/*
- * Set description for status.
- * If out of memory assign UW_ERROR_OOM to status.
- */
-
-void uw_print_status(FILE* fp, UwValuePtr status);
 
 /****************************************************************
  * Constructors
@@ -979,7 +729,7 @@ void uw_print_status(FILE* fp, UwValuePtr status);
  * Most of them are inline wrappers around method invocation
  * macros.
  *
- * Using inline functions to avoid duplicate evaluation of args
+ * Using inline functions to avoid multiple evaluation of args
  * when, say, uw_destroy(vptr++) is called.
  */
 
@@ -1021,11 +771,6 @@ static inline UwResult uw_move(UwValuePtr v)
     return tmp;
 }
 
-UwType_Hash uw_hash(UwValuePtr value);
-/*
- * Calculate hash of value.
- */
-
 static inline UwResult uw_deepcopy(UwValuePtr value)
 {
     UwMethodDeepCopy fn = uw_typeof(value)->deepcopy;
@@ -1045,6 +790,74 @@ static inline UwResult uw_to_string(UwValuePtr value)
 {
     return uw_typeof(value)->to_string(value);
 }
+
+/****************************************************************
+ * API for struct types
+ */
+
+static inline void* _uw_get_data_ptr(UwValuePtr v, UwTypeId type_id)
+/*
+ * Helper function to get pointer to struct data.
+ * Typically used in macros like this:
+ *
+ * #define get_data_ptr(value)  ((MyType*) _uw_get_data_ptr((value), UwTypeId_MyType))
+ */
+{
+    if (v->struct_data) {
+        UwType* t = _uw_types[type_id];
+        return (void*) (
+            ((uint8_t*) v->struct_data) + t->data_offset
+        );
+    } else {
+        return nullptr;
+    }
+}
+
+/****************************************************************
+ * API for compound types
+ */
+
+bool _uw_adopt(UwValuePtr parent, UwValuePtr child);
+/*
+ * Add parent to child's parents or increment
+ * parents_refcount if added already.
+ *
+ * Decrement child refcount.
+ *
+ * Return false if OOM.
+ */
+
+bool _uw_abandon(UwValuePtr parent, UwValuePtr child);
+/*
+ * Decrement parents_refcount in child's list of parents and when it reaches zero
+ * remove parent from child's parents and return true.
+ *
+ * If child still refers to parent, return false.
+ */
+
+bool _uw_is_embraced(UwValuePtr value);
+/*
+ * Return true if value is embraced by some parent.
+ */
+
+bool _uw_need_break_cyclic_refs(UwValuePtr value);
+/*
+ * Check if all parents have zero refcount and there are cyclic references.
+ */
+
+static inline bool _uw_embrace(UwValuePtr parent, UwValuePtr child)
+{
+    if (uw_is_compound(child)) {
+        return _uw_adopt(parent, child);
+    } else {
+        return true;
+    }
+}
+
+UwValuePtr _uw_on_chain(UwValuePtr value, _UwCompoundChain* tail);
+/*
+ * Check if value struct_data is on chain.
+ */
 
 /****************************************************************
  * Compare for equality.
@@ -1111,122 +924,6 @@ static inline bool _uwc_equal_double    (UwValuePtr a, double             b) { _
 static inline bool _uwc_equal_u8        (UwValuePtr a, char8_t*           b) { __UWDECL_CharPtr  (v, b); return _uw_equal(a, &v); }
 static inline bool _uwc_equal_u32       (UwValuePtr a, char32_t*          b) { __UWDECL_Char32Ptr(v, b); return _uw_equal(a, &v); }
 static inline bool _uwc_equal_u8_wrapper(UwValuePtr a, char*              b) { return _uwc_equal_u8(a, (char8_t*) b); }
-
-/****************************************************************
- * C strings
- */
-
-typedef char* CStringPtr;
-
-// automatically cleaned value
-#define CString [[ gnu::cleanup(uw_destroy_cstring) ]] CStringPtr
-
-// somewhat ugly macro to define a local variable initialized with a copy of uw string:
-#define UW_CSTRING_LOCAL(variable_name, uw_str) \
-    char variable_name[uw_strlen_in_utf8(uw_str) + 1]; \
-    uw_string_to_utf8_buf((uw_str), variable_name)
-
-void uw_destroy_cstring(CStringPtr* str);
-
-/****************************************************************
- * Helper functions and macros
- */
-
-static inline void _uw_call_hash(UwValuePtr value, UwHashContext* ctx)
-{
-    uw_typeof(value)->hash(value, ctx);
-}
-
-static inline void* _uw_get_data_ptr(UwValuePtr v, UwTypeId type_id)
-{
-    if (v->struct_data) {
-        UwType* t = _uw_types[type_id];
-        return (void*) (
-            ((uint8_t*) v->struct_data) + t->data_offset
-        );
-    } else {
-        return nullptr;
-    }
-}
-
-static inline void _uw_destroy_args(va_list ap)
-/*
- * Helper for functions that accept values created on stack during function call.
- * Such values cannot be automatically cleaned on error, the callee
- * should do that.
- * See UwArray(), uw_array_append_va, UwMap(), uw_map_update_va
- */
-{
-    for (;;) {{
-        UwValue arg = va_arg(ap, _UwValue);
-        if (uw_va_end(&arg)) {
-            break;
-        }
-    }}
-}
-
-/****************************************************************
- * API for compound types
- */
-
-bool _uw_adopt(UwValuePtr parent, UwValuePtr child);
-/*
- * Add parent to child's parents or increment
- * parents_refcount if added already.
- *
- * Decrement child refcount.
- *
- * Return false if OOM.
- */
-
-bool _uw_abandon(UwValuePtr parent, UwValuePtr child);
-/*
- * Decrement parents_refcount in child's list of parents and when it reaches zero
- * remove parent from child's parents and return true.
- *
- * If child still refers to parent, return false.
- */
-
-bool _uw_is_embraced(UwValuePtr value);
-/*
- * Return true if value is embraced by some parent.
- */
-
-bool _uw_need_break_cyclic_refs(UwValuePtr value);
-/*
- * Check if all parents have zero refcount and there are cyclic references.
- */
-
-static inline bool _uw_embrace(UwValuePtr parent, UwValuePtr child)
-{
-    if (uw_is_compound(child)) {
-        return _uw_adopt(parent, child);
-    } else {
-        return true;
-    }
-}
-
-UwValuePtr _uw_on_chain(UwValuePtr value, _UwCompoundChain* tail);
-/*
- * Check if value struct_data is on chain.
- */
-
-/****************************************************************
- * Dump functions
- */
-
-void _uw_print_indent(FILE* fp, int indent);
-void _uw_dump_start(FILE* fp, UwValuePtr value, int indent);
-void _uw_dump_struct_data(FILE* fp, UwValuePtr value);
-void _uw_dump_compound_data(FILE* fp, UwValuePtr value, int indent);
-void _uw_dump(FILE* fp, UwValuePtr value, int first_indent, int next_indent, _UwCompoundChain* tail);
-
-void uw_dump(FILE* fp, UwValuePtr value);
-
-static inline void _uw_call_dump(FILE* fp, UwValuePtr value, int first_indent, int next_indent, _UwCompoundChain* tail)
-{
-    uw_typeof(value)->dump(value, fp, first_indent, next_indent, tail);
-}
 
 #ifdef __cplusplus
 }
