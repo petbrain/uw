@@ -16,7 +16,7 @@ extern UwResult _uw_map_create(...);
  * Update map: insert key-value pair or replace existing value.
  */
 
-bool uw_map_update(UwValuePtr map, UwValuePtr key, UwValuePtr value);
+UwResult uw_map_update(UwValuePtr map, UwValuePtr key, UwValuePtr value);
 /*
  * `key` is deeply copied and `value` is cloned before adding.
  * CharPtr values are converted to UW strings.

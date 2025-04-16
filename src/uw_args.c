@@ -10,9 +10,7 @@ UwResult uw_parse_kvargs(int argc, char* argv[])
     // add argv[0] to kwargs
     UwValue zero = UwUnsigned(0);
     UwValue argv0 = UwCharPtr((char8_t*) argv[0]);
-    if (!uw_map_update(&kwargs, &zero, &argv0)) {
-        return UwOOM();
-    }
+    uw_expect_ok( uw_map_update(&kwargs, &zero, &argv0) );
 
     for(int i = 1; i < argc; i++) {{
 
@@ -28,15 +26,11 @@ UwResult uw_parse_kvargs(int argc, char* argv[])
         if (uw_array_length(&kv) == 1) {
             // `=` is missing, value is null
             UwValue null = UwNull();
-            if (!uw_map_update(&kwargs, &key, &null)) {
-                return UwOOM();
-            }
+            uw_expect_ok( uw_map_update(&kwargs, &key, &null) );
         } else {
             // add key-value, overwriting previous one
             UwValue value = uw_array_item(&kv, 1);
-            if (!uw_map_update(&kwargs, &key, &value)) {
-                return UwOOM();
-            }
+            uw_expect_ok( uw_map_update(&kwargs, &key, &value) );
         }
     }}
     return uw_move(&kwargs);

@@ -8,27 +8,29 @@
 extern "C" {
 #endif
 
-#define UW_SUCCESS                    0
-#define UW_STATUS_VA_END              1  // used as a terminator for variadic arguments
-#define UW_ERROR_ERRNO                2
-#define UW_ERROR_OOM                  3
-#define UW_ERROR_NOT_IMPLEMENTED      4
-#define UW_ERROR_INCOMPATIBLE_TYPE    5
-#define UW_ERROR_EOF                  6
-#define UW_ERROR_INDEX_OUT_OF_RANGE   7
+#define UW_SUCCESS                     0
+#define UW_STATUS_VA_END               1  // used as a terminator for variadic arguments
+#define UW_ERROR_ERRNO                 2
+#define UW_ERROR_OOM                   3
+#define UW_ERROR_NOT_IMPLEMENTED       4
+#define UW_ERROR_INCOMPATIBLE_TYPE     5
+#define UW_ERROR_EOF                   6
+#define UW_ERROR_DATA_SIZE_TOO_BIG     7
+#define UW_ERROR_INDEX_OUT_OF_RANGE    8
+#define UW_ERROR_ITERATION_IN_PROGRESS 9
 
 // array errors
-#define UW_ERROR_EXTRACT_FROM_EMPTY_ARRAY  8
+#define UW_ERROR_EXTRACT_FROM_EMPTY_ARRAY  10
 
 // map errors
-#define UW_ERROR_KEY_NOT_FOUND        9
+#define UW_ERROR_KEY_NOT_FOUND        11
 
 // File errors
-#define UW_ERROR_FILE_ALREADY_OPENED  10
-#define UW_ERROR_NOT_REGULAR_FILE     11
+#define UW_ERROR_FILE_ALREADY_OPENED  12
+#define UW_ERROR_NOT_REGULAR_FILE     13
 
 // StringIO errors
-#define UW_ERROR_UNREAD_FAILED        12
+#define UW_ERROR_UNREAD_FAILED        14
 
 uint16_t uw_define_status(char* status);
 /*
@@ -67,6 +69,13 @@ static inline bool uw_error(UwValuePtr status)
             return uw_move(value_ptr);  \
         }  \
     } while (false)
+
+#define uw_expect_ok( function_call )  \
+    do {  \
+        UwValue status = function_call;  \
+        uw_return_if_error(&status);  \
+    } while (false)
+
 
 static inline bool uw_eof(UwValuePtr status)
 {

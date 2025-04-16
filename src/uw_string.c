@@ -1981,9 +1981,7 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
                 strmeth->copy_to(start, &substr, 0, substr_len);
                 _uw_string_set_length(&substr, substr_len);
             }
-            if (!uw_array_append(&result, &substr)) {
-                return UwOOM();
-            }
+            uw_expect_ok( uw_array_append(&result, &substr) );
 
             start_i = i + 1;
             start = ptr + char_size;
@@ -2014,9 +2012,7 @@ UwResult uw_string_split_chr(UwValuePtr str, char32_t splitter, unsigned maxspli
             strmeth->copy_to(start, &substr, 0, substr_len);
             _uw_string_set_length(&substr, substr_len);
         }
-        if (!uw_array_append(&result, &substr)) {
-            return UwOOM();
-        }
+        uw_expect_ok( uw_array_append(&result, &substr) );
     }
     return uw_move(&result);
 }
@@ -2052,9 +2048,7 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
                 strmeth->copy_to(start + char_size, &substr, 0, substr_len);
                 _uw_string_set_length(&substr, substr_len);
             }
-            if (!uw_array_insert(&result, 0, &substr)) {
-                return UwOOM();
-            }
+            uw_expect_ok( uw_array_insert(&result, 0, &substr) );
 
             end_i = i - 1;
             substr_width = 0;
@@ -2085,9 +2079,7 @@ UwResult uw_string_rsplit_chr(UwValuePtr str, char32_t splitter, unsigned maxspl
             strmeth->copy_to(start, &substr, 0, substr_len);
             _uw_string_set_length(&substr, substr_len);
         }
-        if (!uw_array_insert(&result, 0, &substr)) {
-            return UwOOM();
-        }
+        uw_expect_ok( uw_array_insert(&result, 0, &substr) );
     }
     return uw_move(&result);
 }

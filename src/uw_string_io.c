@@ -4,7 +4,7 @@
 #include "src/uw_struct_internal.h"
 
 typedef struct {
-    // line reader data
+    // line reader iterator data
     _UwValue line;
     _UwValue pushback;
     unsigned line_number;
@@ -153,8 +153,7 @@ static UwResult start_read_lines(UwValuePtr self)
 static UwResult read_line(UwValuePtr self)
 {
     UwValue result = UwString();
-    UwValue status = read_line_inplace(self, &result);
-    uw_return_if_error(&status);
+    uw_expect_ok( read_line_inplace(self, &result) );
     return uw_move(&result);
 }
 
@@ -258,7 +257,6 @@ static_assert((sizeof(_UwStructData) & (alignof(_UwStringIO) - 1)) == 0);
 static void init_stringio_type()
 {
     _uw_init_interfaces();
-    _uw_init_iterators();
 
     UwTypeId_StringIO = uw_add_type(
         &stringio_type,

@@ -32,8 +32,9 @@ extern "C" {
 #define UwTypeId_Struct     11U  // the base for reference counted data
 #define UwTypeId_Compound   12U  // the base for values that may contain circular references
 #define UwTypeId_Status     13U  // value_data is optional
-#define UwTypeId_Array      14U
-#define UwTypeId_Map        15U
+#define UwTypeId_Iterator   14U
+#define UwTypeId_Array      15U
+#define UwTypeId_Map        16U
 
 // char* sub-types
 #define UW_CHARPTR    0
@@ -58,6 +59,7 @@ extern "C" {
 #define uw_is_struct(value)    uw_is_subtype((value), UwTypeId_Struct)
 #define uw_is_compound(value)  uw_is_subtype((value), UwTypeId_Compound)
 #define uw_is_status(value)    uw_is_subtype((value), UwTypeId_Status)
+#define uw_is_iterator(value)  uw_is_subtype((value), UwTypeId_Iterator)
 #define uw_is_array(value)     uw_is_subtype((value), UwTypeId_Array)
 #define uw_is_map(value)       uw_is_subtype((value), UwTypeId_Map)
 #define uw_is_file(value)      uw_is_subtype((value), UwTypeId_File)
@@ -77,6 +79,7 @@ extern "C" {
 #define uw_assert_struct(value)    uw_assert(uw_is_struct  (value))
 #define uw_assert_compound(value)  uw_assert(uw_is_compound(value))
 #define uw_assert_status(value)    uw_assert(uw_is_status  (value))
+#define uw_assert_iterator(value)  uw_assert(uw_is_iterator(value))
 #define uw_assert_array(value)     uw_assert(uw_is_array   (value))
 #define uw_assert_map(value)       uw_assert(uw_is_map     (value))
 #define uw_assert_file(value)      uw_assert(uw_is_file    (value))

@@ -17,26 +17,28 @@ static void panic_status()
 
 static void array_fini(UwValuePtr self)
 {
-    _uw_destroy_array(self->type_id, get_data_ptr(self), self);
+    _UwArray* array_data = get_data_ptr(self);
+    uw_assert(array_data->itercount == 0);
+    _uw_destroy_array(self->type_id, array_data, self);
 }
 
 static UwResult array_init(UwValuePtr self, void* ctor_args)
 {
     // XXX not using ctor_args for now
 
-    if (_uw_alloc_array(self->type_id, get_data_ptr(self), UWARRAY_INITIAL_CAPACITY)) {
-        return UwOK();
+    UwValue status = _uw_alloc_array(self->type_id, get_data_ptr(self), UWARRAY_INITIAL_CAPACITY);
+    if (uw_error(&status)) {
+        array_fini(self);
     }
-    array_fini(self);
-    return UwOOM();
+    return uw_move(&status);
 }
 
 static void array_hash(UwValuePtr self, UwHashContext* ctx)
 {
     _uw_hash_uint64(ctx, self->type_id);
-    _UwArray* array = get_data_ptr(self);
-    UwValuePtr item_ptr = array->items;
-    for (unsigned n = array->length; n; n--, item_ptr++) {
+    _UwArray* array_data = get_data_ptr(self);
+    UwValuePtr item_ptr = array_data->items;
+    for (unsigned n = array_data->length; n; n--, item_ptr++) {
         _uw_call_hash(item_ptr, ctx);
     }
 }
@@ -49,17 +51,14 @@ static UwResult array_deepcopy(UwValuePtr self)
     _UwArray* src_array = get_data_ptr(self);
     _UwArray* dest_array = get_data_ptr(&dest);
 
-    if (!_uw_array_resize(dest.type_id, dest_array, src_array->length)) {
-        return UwOOM();
-    }
+    uw_expect_ok( _uw_array_resize(dest.type_id, dest_array, src_array->length) );
 
     UwValuePtr src_item_ptr = src_array->items;
     UwValuePtr dest_item_ptr = dest_array->items;
     for (unsigned i = 0; i < src_array->length; i++) {
         *dest_item_ptr = uw_deepcopy(src_item_ptr);
-        if (uw_error(dest_item_ptr)) {
-            return uw_move(dest_item_ptr);
-        }
+        uw_return_if_error(dest_item_ptr);
+        _uw_embrace(&dest, dest_item_ptr);
         src_item_ptr++;
         dest_item_ptr++;
         dest_array->length++;
@@ -85,12 +84,12 @@ static void array_dump(UwValuePtr self, FILE* fp, int first_indent, int next_ind
         .value = self
     };
 
-    _UwArray* array = get_data_ptr(self);
-    fprintf(fp, "%u items, capacity=%u\n", array->length, array->capacity);
+    _UwArray* array_data = get_data_ptr(self);
+    fprintf(fp, "%u items, capacity=%u\n", array_data->length, array_data->capacity);
 
     next_indent += 4;
-    UwValuePtr item_ptr = array->items;
-    for (unsigned n = array->length; n; n--, item_ptr++) {
+    UwValuePtr item_ptr = array_data->items;
+    for (unsigned n = array_data->length; n; n--, item_ptr++) {
         _uw_call_dump(fp, item_ptr, next_indent, next_indent, &this_link);
     }
 }
@@ -181,61 +180,69 @@ UwResult _uw_array_create(...)
     return uw_move(&array);
 }
 
-bool _uw_alloc_array(UwTypeId type_id, _UwArray* array, unsigned capacity)
+UwResult _uw_alloc_array(UwTypeId type_id, _UwArray* array_data, unsigned capacity)
 {
     if (capacity >= (UINT_MAX - UWARRAY_CAPACITY_INCREMENT)) {
-        return false;
+        return UwError(UW_ERROR_DATA_SIZE_TOO_BIG);
     }
 
-    array->length = 0;
-    array->capacity = round_capacity(capacity);
+    array_data->length = 0;
+    array_data->capacity = round_capacity(capacity);
 
-    unsigned memsize = array->capacity * sizeof(_UwValue);
-    array->items = _uw_types[type_id]->allocator->allocate(memsize, true);
+    unsigned memsize = array_data->capacity * sizeof(_UwValue);
+    array_data->items = _uw_types[type_id]->allocator->allocate(memsize, true);
 
-    return array->items != nullptr;
+    if (array_data->items) {
+        return UwOK();
+    } else {
+        return UwOOM();
+    }
 }
 
-void _uw_destroy_array(UwTypeId type_id, _UwArray* array, UwValuePtr parent)
+void _uw_destroy_array(UwTypeId type_id, _UwArray* array_data, UwValuePtr parent)
 {
-    if (array->items) {
-        UwValuePtr item_ptr = array->items;
-        for (unsigned n = array->length; n; n--, item_ptr++) {
+    if (array_data->items) {
+        UwValuePtr item_ptr = array_data->items;
+        for (unsigned n = array_data->length; n; n--, item_ptr++) {
             if (uw_is_compound(item_ptr)) {
                 _uw_abandon(parent, item_ptr);
             }
             uw_destroy(item_ptr);
         }
-        unsigned memsize = array->capacity * sizeof(_UwValue);
-        _uw_types[type_id]->allocator->release((void**) &array->items, memsize);
+        unsigned memsize = array_data->capacity * sizeof(_UwValue);
+        _uw_types[type_id]->allocator->release((void**) &array_data->items, memsize);
     }
 }
 
-bool _uw_array_resize(UwTypeId type_id, _UwArray* array, unsigned desired_capacity)
+UwResult _uw_array_resize(UwTypeId type_id, _UwArray* array_data, unsigned desired_capacity)
 {
-    if (desired_capacity < array->length) {
-        desired_capacity = array->length;
+    if (desired_capacity < array_data->length) {
+        desired_capacity = array_data->length;
     } else if (desired_capacity >= (UINT_MAX - UWARRAY_CAPACITY_INCREMENT)) {
-        return false;
+        return UwError(UW_ERROR_DATA_SIZE_TOO_BIG);
     }
     unsigned new_capacity = round_capacity(desired_capacity);
 
     Allocator* allocator = _uw_types[type_id]->allocator;
 
-    unsigned old_memsize = array->capacity * sizeof(_UwValue);
+    unsigned old_memsize = array_data->capacity * sizeof(_UwValue);
     unsigned new_memsize = new_capacity * sizeof(_UwValue);
 
-    if (!allocator->reallocate((void**) &array->items, old_memsize, new_memsize, true, nullptr)) {
-        return false;
+    if (!allocator->reallocate((void**) &array_data->items, old_memsize, new_memsize, true, nullptr)) {
+        return UwOOM();
     }
-    array->capacity = new_capacity;
-    return true;
+    array_data->capacity = new_capacity;
+    return UwOK();
 }
 
-bool uw_array_resize(UwValuePtr array, unsigned desired_capacity)
+UwResult uw_array_resize(UwValuePtr array, unsigned desired_capacity)
 {
     uw_assert_array(array);
-    return _uw_array_resize(array->type_id, get_data_ptr(array), desired_capacity);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+    return _uw_array_resize(array->type_id, array_data, desired_capacity);
 }
 
 unsigned uw_array_length(UwValuePtr array)
@@ -265,50 +272,45 @@ bool _uw_array_eq(_UwArray* a, _UwArray* b)
     return true;
 }
 
-bool _uw_array_append(UwValuePtr array, UwValuePtr item)
+UwResult _uw_array_append(UwValuePtr array, UwValuePtr item)
 // XXX this will be an interface method, _uwi_array_append
 {
     uw_assert_array(array);
-
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
     UwValue v = uw_clone(item);
-    if (uw_error(&v)) {
-        uw_destroy(&v);
-        return false;
-    }
-    return _uw_array_append_item(array->type_id, get_data_ptr(array), &v, array);
+    return _uw_array_append_item(array->type_id, array_data, &v, array);
 }
 
-static bool grow_array(UwTypeId type_id, _UwArray* array)
+static UwResult grow_array(UwTypeId type_id, _UwArray* array_data)
 {
-    uw_assert(array->length <= array->capacity);
+    uw_assert(array_data->length <= array_data->capacity);
 
-    if (array->length == array->capacity) {
+    if (array_data->length == array_data->capacity) {
         unsigned new_capacity;
-        if (array->capacity <= UWARRAY_CAPACITY_INCREMENT) {
-            new_capacity = array->capacity + UWARRAY_INITIAL_CAPACITY;
+        if (array_data->capacity <= UWARRAY_CAPACITY_INCREMENT) {
+            new_capacity = array_data->capacity + UWARRAY_INITIAL_CAPACITY;
         } else {
-            new_capacity = array->capacity + UWARRAY_CAPACITY_INCREMENT;
+            new_capacity = array_data->capacity + UWARRAY_CAPACITY_INCREMENT;
         }
-        if (!_uw_array_resize(type_id, array, new_capacity)) {
-            return false;
-        }
+        uw_expect_ok( _uw_array_resize(type_id, array_data, new_capacity) );
     }
-    return true;
+    return UwOK();
 }
 
-bool _uw_array_append_item(UwTypeId type_id, _UwArray* array, UwValuePtr item, UwValuePtr parent)
+UwResult _uw_array_append_item(UwTypeId type_id, _UwArray* array_data, UwValuePtr item, UwValuePtr parent)
 {
     if (uw_is_status(item)) {
         // prohibit appending Status values
         panic_status();
     }
-    if (!grow_array(type_id, array)) {
-        return false;
-    }
+    uw_expect_ok( grow_array(type_id, array_data) );
     _uw_embrace(parent, item);
-    array->items[array->length] = uw_move(item);
-    array->length++;
-    return true;
+    array_data->items[array_data->length] = uw_move(item);
+    array_data->length++;
+    return UwOK();
 }
 
 UwResult _uw_array_append_va(UwValuePtr array, ...)
@@ -323,9 +325,11 @@ UwResult _uw_array_append_va(UwValuePtr array, ...)
 UwResult uw_array_append_ap(UwValuePtr dest, va_list ap)
 {
     uw_assert_array(dest);
-
+    _UwArray* array_data = get_data_ptr(dest);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
     UwTypeId type_id = dest->type_id;
-    _UwArray* array = get_data_ptr(dest);
     unsigned num_appended = 0;
     UwValue error = UwOOM();  // default error is OOM unless some arg is a status
     for(;;) {{
@@ -341,7 +345,10 @@ UwResult uw_array_append_ap(UwValuePtr dest, va_list ap)
         if (!uw_charptr_to_string_inplace(&arg)) {
             goto failure;
         }
-        if (!_uw_array_append_item(type_id, array, &arg, dest)) {
+        UwValue status = _uw_array_append_item(type_id, array_data, &arg, dest);
+        if (uw_error(&status)) {
+            uw_destroy(&error);
+            error = uw_move(&status);
             goto failure;
         }
         num_appended++;
@@ -350,7 +357,7 @@ UwResult uw_array_append_ap(UwValuePtr dest, va_list ap)
 failure:
     // rollback
     while (num_appended--) {
-        UwValue v = _uw_array_pop(array);
+        UwValue v = _uw_array_pop(array_data);
         uw_destroy(&v);
     }
     // consume args
@@ -358,164 +365,178 @@ failure:
     return uw_move(&error);
 }
 
-bool _uw_array_insert(UwValuePtr array, unsigned index, UwValuePtr item)
+UwResult _uw_array_insert(UwValuePtr array, unsigned index, UwValuePtr item)
 {
     if (uw_is_status(item)) {
         // prohibit appending Status values
         panic_status();
     }
-
     uw_assert_array(array);
-    _UwArray* _array = get_data_ptr(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+    if (index > array_data->length) {
+        return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
+    }
+    uw_expect_ok( grow_array(array->type_id, array_data) );
 
-    UwValue v = uw_clone(item);
-    if (uw_error(&v)) {
-        uw_destroy(&v);
-        return false;
-    }
-    if (index > _array->length) {
-        return false;
-    }
-    if (!grow_array(array->type_id, _array)) {
-        return false;
-    }
     _uw_embrace(array, item);
-    if (index < _array->length) {
-        memmove(&_array->items[index + 1], &_array->items[index], (_array->length - index) * sizeof(_UwValue));
+    if (index < array_data->length) {
+        memmove(&array_data->items[index + 1], &array_data->items[index], (array_data->length - index) * sizeof(_UwValue));
     }
-    _array->items[index] = uw_move(&v);
-    _array->length++;
-    return true;
+    array_data->items[index] = uw_clone(item);
+    array_data->length++;
+    return UwOK();
 }
 
-UwResult _uw_array_item_signed(UwValuePtr self, ssize_t index)
+UwResult _uw_array_item_signed(UwValuePtr array, ssize_t index)
 {
-    uw_assert_array(self);
+    uw_assert_array(array);
 
-    _UwArray* array = get_data_ptr(self);
+    _UwArray* array_data = get_data_ptr(array);
 
     if (index < 0) {
-        index = array->length + index;
+        index = array_data->length + index;
         if (index < 0) {
             return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
         }
-    } else if (index >= array->length) {
+    } else if (index >= array_data->length) {
         return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
     }
-    return uw_clone(&array->items[index]);
+    return uw_clone(&array_data->items[index]);
 }
 
-UwResult _uw_array_item(UwValuePtr self, unsigned index)
+UwResult _uw_array_item(UwValuePtr array, unsigned index)
 {
-    uw_assert_array(self);
-    _UwArray* array = get_data_ptr(self);
-    if (index < array->length) {
-        return uw_clone(&array->items[index]);
+    uw_assert_array(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (index < array_data->length) {
+        return uw_clone(&array_data->items[index]);
     } else {
         return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
     }
 }
 
-UwResult _uw_array_set_item_signed(UwValuePtr self, ssize_t index, UwValuePtr item)
+UwResult _uw_array_set_item_signed(UwValuePtr array, ssize_t index, UwValuePtr item)
 {
-    uw_assert_array(self);
-
-    _UwArray* array = get_data_ptr(self);
-
+    uw_assert_array(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
     if (index < 0) {
-        index = array->length + index;
+        index = array_data->length + index;
         if (index < 0) {
             return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
         }
-    } else if (index >= array->length) {
+    } else if (index >= array_data->length) {
         return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
     }
 
-    uw_destroy(&array->items[index]);
-    array->items[index] = uw_clone(item);
+    uw_destroy(&array_data->items[index]);
+    array_data->items[index] = uw_clone(item);
     return UwOK();
 }
 
-UwResult _uw_array_set_item(UwValuePtr self, unsigned index, UwValuePtr item)
+UwResult _uw_array_set_item(UwValuePtr array, unsigned index, UwValuePtr item)
 {
-    uw_assert_array(self);
-    _UwArray* array = get_data_ptr(self);
-    if (index < array->length) {
-        uw_destroy(&array->items[index]);
-        array->items[index] = uw_clone(item);
+    uw_assert_array(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+    if (index < array_data->length) {
+        uw_destroy(&array_data->items[index]);
+        array_data->items[index] = uw_clone(item);
         return UwOK();
     } else {
         return UwError(UW_ERROR_INDEX_OUT_OF_RANGE);
     }
 }
 
-UwResult uw_array_pull(UwValuePtr self)
+UwResult uw_array_pull(UwValuePtr array)
 {
-    uw_assert_array(self);
-    _UwArray* array = get_data_ptr(self);
-    if (array->length == 0) {
+    uw_assert_array(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+    if (array_data->length == 0) {
         return UwError(UW_ERROR_EXTRACT_FROM_EMPTY_ARRAY);
     }
-    _UwValue result = uw_clone(&array->items[0]);
-    _uw_array_del(array, 0, 1);
+    _UwValue result = uw_clone(&array_data->items[0]);
+    _uw_array_del(array_data, 0, 1);
     return result;
 }
 
-UwResult uw_array_pop(UwValuePtr self)
+UwResult uw_array_pop(UwValuePtr array)
 {
-    uw_assert_array(self);
-    return _uw_array_pop(get_data_ptr(self));
+    uw_assert_array(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+    return _uw_array_pop(array_data);
 }
 
-UwResult _uw_array_pop(_UwArray* array)
+UwResult _uw_array_pop(_UwArray* array_data)
 {
-    if (array->length == 0) {
+    if (array_data->length == 0) {
         return UwError(UW_ERROR_EXTRACT_FROM_EMPTY_ARRAY);
     }
-    array->length--;
-    return uw_move(&array->items[array->length]);
+    array_data->length--;
+    return uw_move(&array_data->items[array_data->length]);
 }
 
-void uw_array_del(UwValuePtr self, unsigned start_index, unsigned end_index)
+void uw_array_del(UwValuePtr array, unsigned start_index, unsigned end_index)
 {
-    uw_assert_array(self);
-    _uw_array_del(get_data_ptr(self), start_index, end_index);
+    uw_assert_array(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return; // UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+    _uw_array_del(array_data, start_index, end_index);
 }
 
-void uw_array_clean(UwValuePtr self)
+void uw_array_clean(UwValuePtr array)
 {
-    uw_assert_array(self);
-    _uw_array_del(get_data_ptr(self), 0, UINT_MAX);
+    uw_assert_array(array);
+    _UwArray* array_data = get_data_ptr(array);
+    if (array_data->itercount) {
+        return; // UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+    _uw_array_del(array_data, 0, UINT_MAX);
 }
 
-void _uw_array_del(_UwArray* array, unsigned start_index, unsigned end_index)
+void _uw_array_del(_UwArray* array_data, unsigned start_index, unsigned end_index)
 {
-    if (array->length == 0) {
+    if (array_data->length == 0) {
         return;
     }
-    if (end_index > array->length) {
-        end_index = array->length;
+    if (end_index > array_data->length) {
+        end_index = array_data->length;
     }
     if (start_index >= end_index) {
         return;
     }
 
-    UwValuePtr item_ptr = &array->items[start_index];
+    UwValuePtr item_ptr = &array_data->items[start_index];
     for (unsigned i = start_index; i < end_index; i++, item_ptr++) {
         uw_destroy(item_ptr);
     }
-    unsigned new_length = array->length - (end_index - start_index);
-    unsigned tail_length = array->length - end_index;
+    unsigned new_length = array_data->length - (end_index - start_index);
+    unsigned tail_length = array_data->length - end_index;
     if (tail_length) {
-        memmove(&array->items[start_index], &array->items[end_index], tail_length * sizeof(_UwValue));
-        memset(&array->items[new_length], 0, (array->length - new_length) * sizeof(_UwValue));
+        memmove(&array_data->items[start_index], &array_data->items[end_index], tail_length * sizeof(_UwValue));
+        memset(&array_data->items[new_length], 0, (array_data->length - new_length) * sizeof(_UwValue));
     }
-    array->length = new_length;
+    array_data->length = new_length;
 }
 
-UwResult uw_array_slice(UwValuePtr self, unsigned start_index, unsigned end_index)
+UwResult uw_array_slice(UwValuePtr array, unsigned start_index, unsigned end_index)
 {
-    _UwArray* src_array = get_data_ptr(self);
+    _UwArray* src_array = get_data_ptr(array);
     unsigned length = _uw_array_length(src_array);
 
     if (end_index > length) {
@@ -530,18 +551,14 @@ UwResult uw_array_slice(UwValuePtr self, unsigned start_index, unsigned end_inde
     UwValue dest = UwArray();
     uw_return_if_error(&dest);
 
-    if (!uw_array_resize(&dest, slice_len)) {
-        return UwOOM();
-    }
+    uw_expect_ok( uw_array_resize(&dest, slice_len) );
+
     _UwArray* dest_array = get_data_ptr(&dest);
 
     UwValuePtr src_item_ptr = &src_array->items[start_index];
     UwValuePtr dest_item_ptr = dest_array->items;
     for (unsigned i = start_index; i < end_index; i++) {
         *dest_item_ptr = uw_clone(src_item_ptr);
-        if (uw_error(dest_item_ptr)) {
-            return uw_move(dest_item_ptr);
-        }
         src_item_ptr++;
         dest_item_ptr++;
         dest_array->length++;
@@ -645,21 +662,25 @@ UwResult _uw_array_join(UwValuePtr separator, UwValuePtr array)
     return uw_move(&result);
 }
 
-bool uw_array_dedent(UwValuePtr lines)
+UwResult uw_array_dedent(UwValuePtr lines)
 {
+    // dedent inplace, so access items directly to avoid cloning
+    _UwArray* array_data = get_data_ptr(lines);
+
+    if (array_data->itercount) {
+        return UwError(UW_ERROR_ITERATION_IN_PROGRESS);
+    }
+
     static char32_t indent_chars[] = {' ', '\t', 0};
 
     unsigned n = uw_array_length(lines);
-
-    // dedent inplace, so access items directly to avoid cloning
-    _UwArray* array = get_data_ptr(lines);
 
     unsigned indent[n];
 
     // measure indents
     unsigned min_indent = UINT_MAX;
     for (unsigned i = 0; i < n; i++) {
-        UwValuePtr line = &array->items[i];
+        UwValuePtr line = &array_data->items[i];
         if (uw_is_string(line)) {
             indent[i] = uw_string_skip_chars(line, 0, indent_chars);
             if (_uw_string_length(line) && indent[i] < min_indent) {
@@ -671,16 +692,16 @@ bool uw_array_dedent(UwValuePtr lines)
     }
     if (min_indent == UINT_MAX || min_indent == 0) {
         // nothing to dedent
-        return true;
+        return UwOK();
     }
 
     for (unsigned i = 0; i < n; i++) {
         if (indent[i]) {
-            UwValuePtr line = &array->items[i];
+            UwValuePtr line = &array_data->items[i];
             if (!uw_string_erase(line, 0, min_indent)) {
-                return false;
+                return UwOOM();
             }
         }
     }
-    return true;
+    return UwOK();
 }

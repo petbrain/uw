@@ -38,22 +38,22 @@ extern UwResult _uw_array_create(...);
             UwValuePtr: _uw_array_append             \
     )((array), (item))
 
-bool _uw_array_append(UwValuePtr array, UwValuePtr item);
+UwResult _uw_array_append(UwValuePtr array, UwValuePtr item);
 /*
  * The basic append function.
  *
  * `item` is cloned before appending. CharPtr values are converted to UW strings.
  */
 
-static inline bool _uw_array_append_null    (UwValuePtr array, UwType_Null     item) { __UWDECL_Null     (v);       return _uw_array_append(array, &v); }
-static inline bool _uw_array_append_bool    (UwValuePtr array, UwType_Bool     item) { __UWDECL_Bool     (v, item); return _uw_array_append(array, &v); }
-static inline bool _uw_array_append_signed  (UwValuePtr array, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_array_append(array, &v); }
-static inline bool _uw_array_append_unsigned(UwValuePtr array, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_array_append(array, &v); }
-static inline bool _uw_array_append_float   (UwValuePtr array, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_array_append(array, &v); }
-static inline bool _uw_array_append_u8      (UwValuePtr array, char8_t*        item) { __UWDECL_CharPtr  (v, item); return _uw_array_append(array, &v); }
-static inline bool _uw_array_append_u32     (UwValuePtr array, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_array_append(array, &v); }
+static inline UwResult _uw_array_append_null    (UwValuePtr array, UwType_Null     item) { __UWDECL_Null     (v);       return _uw_array_append(array, &v); }
+static inline UwResult _uw_array_append_bool    (UwValuePtr array, UwType_Bool     item) { __UWDECL_Bool     (v, item); return _uw_array_append(array, &v); }
+static inline UwResult _uw_array_append_signed  (UwValuePtr array, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_array_append(array, &v); }
+static inline UwResult _uw_array_append_unsigned(UwValuePtr array, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_array_append(array, &v); }
+static inline UwResult _uw_array_append_float   (UwValuePtr array, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_array_append(array, &v); }
+static inline UwResult _uw_array_append_u8      (UwValuePtr array, char8_t*        item) { __UWDECL_CharPtr  (v, item); return _uw_array_append(array, &v); }
+static inline UwResult _uw_array_append_u32     (UwValuePtr array, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_array_append(array, &v); }
 
-static inline bool _uw_array_append_u8_wrapper(UwValuePtr array, char* item)
+static inline UwResult _uw_array_append_u8_wrapper(UwValuePtr array, char* item)
 {
     return _uw_array_append_u8(array, (char8_t*) item);
 }
@@ -99,22 +99,22 @@ UwResult uw_array_append_ap(UwValuePtr array, va_list ap);
             UwValuePtr: _uw_array_insert             \
     )((array), (index), (item))
 
-bool _uw_array_insert(UwValuePtr array, unsigned index, UwValuePtr item);
+UwResult _uw_array_insert(UwValuePtr array, unsigned index, UwValuePtr item);
 /*
  * The basic insert function.
  *
  * `item` is cloned before inserting. CharPtr values are converted to UW strings.
  */
 
-static inline bool _uw_array_insert_null    (UwValuePtr array, unsigned index, UwType_Null     item) { __UWDECL_Null     (v);       return _uw_array_insert(array, index, &v); }
-static inline bool _uw_array_insert_bool    (UwValuePtr array, unsigned index, UwType_Bool     item) { __UWDECL_Bool     (v, item); return _uw_array_insert(array, index, &v); }
-static inline bool _uw_array_insert_signed  (UwValuePtr array, unsigned index, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_array_insert(array, index, &v); }
-static inline bool _uw_array_insert_unsigned(UwValuePtr array, unsigned index, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_array_insert(array, index, &v); }
-static inline bool _uw_array_insert_float   (UwValuePtr array, unsigned index, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_array_insert(array, index, &v); }
-static inline bool _uw_array_insert_u8      (UwValuePtr array, unsigned index, char8_t*        item) { __UWDECL_CharPtr  (v, item); return _uw_array_insert(array, index, &v); }
-static inline bool _uw_array_insert_u32     (UwValuePtr array, unsigned index, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_array_insert(array, index, &v); }
+static inline UwResult _uw_array_insert_null    (UwValuePtr array, unsigned index, UwType_Null     item) { __UWDECL_Null     (v);       return _uw_array_insert(array, index, &v); }
+static inline UwResult _uw_array_insert_bool    (UwValuePtr array, unsigned index, UwType_Bool     item) { __UWDECL_Bool     (v, item); return _uw_array_insert(array, index, &v); }
+static inline UwResult _uw_array_insert_signed  (UwValuePtr array, unsigned index, UwType_Signed   item) { __UWDECL_Signed   (v, item); return _uw_array_insert(array, index, &v); }
+static inline UwResult _uw_array_insert_unsigned(UwValuePtr array, unsigned index, UwType_Unsigned item) { __UWDECL_Unsigned (v, item); return _uw_array_insert(array, index, &v); }
+static inline UwResult _uw_array_insert_float   (UwValuePtr array, unsigned index, UwType_Float    item) { __UWDECL_Float    (v, item); return _uw_array_insert(array, index, &v); }
+static inline UwResult _uw_array_insert_u8      (UwValuePtr array, unsigned index, char8_t*        item) { __UWDECL_CharPtr  (v, item); return _uw_array_insert(array, index, &v); }
+static inline UwResult _uw_array_insert_u32     (UwValuePtr array, unsigned index, char32_t*       item) { __UWDECL_Char32Ptr(v, item); return _uw_array_insert(array, index, &v); }
 
-static inline bool _uw_array_insert_u8_wrapper(UwValuePtr array, unsigned index, char* item)
+static inline UwResult _uw_array_insert_u8_wrapper(UwValuePtr array, unsigned index, char* item)
 {
     return _uw_array_insert_u8(array, index, (char8_t*) item);
 }
@@ -191,7 +191,7 @@ UwResult _uw_array_set_item(UwValuePtr array, unsigned index, UwValuePtr item);
  * Miscellaneous array functions
  */
 
-bool uw_array_resize(UwValuePtr array, unsigned desired_capacity);
+UwResult uw_array_resize(UwValuePtr array, unsigned desired_capacity);
 
 unsigned uw_array_length(UwValuePtr array);
 
@@ -211,12 +211,12 @@ UwResult uw_array_slice(UwValuePtr array, unsigned start_index, unsigned end_ind
  * Return shallow copy of the given range of array.
  */
 
-bool uw_array_dedent(UwValuePtr lines);
+UwResult uw_array_dedent(UwValuePtr lines);
 /*
- * Dedent array of strings.
+ * Dedent array of strings inplace.
  * XXX count treat tabs as single spaces.
  *
- * Return true on success, false if OOM.
+ * Return status.
  */
 
 #ifdef __cplusplus

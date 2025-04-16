@@ -228,7 +228,7 @@ There also can be `ByteReader` and `CharReader` and file iterable
 may provide all of them.
 
 Iterators that are separate from their iterables are represented
-by `UwType_Iterator` (TODO).
+by `UwType_Iterator`.
 This type contains iterator state and a clone of iterable value.
 
 Iterables must include `itercount` field that shows how many iterations

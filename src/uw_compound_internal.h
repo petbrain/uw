@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+extern UwType _uw_compound_type;
+
 /*
  * Traversing cyclic references requires the list of parents with reference counts.
  * Parent reference count is necessary for cases when, say, a list contains items

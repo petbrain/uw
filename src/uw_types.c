@@ -5,8 +5,10 @@
 #include "include/uw.h"
 #include "src/uw_array_internal.h"
 #include "src/uw_charptr_internal.h"
+#include "src/uw_compound_internal.h"
 #include "src/uw_interfaces_internal.h"
 #include "src/uw_string_internal.h"
+#include "src/uw_struct_internal.h"
 
 UwType** _uw_types = nullptr;
 static UwTypeId num_uw_types = 0;
@@ -744,9 +746,8 @@ static UwType ptr_type = {
  * Type system initialization.
  */
 
-extern UwType _uw_struct_type;    // defined in uw_struct.c
-extern UwType _uw_compound_type;  // defined in uw_compound.c
 extern UwType _uw_status_type;    // defined in uw_status.c
+extern UwType _uw_iterator_type;  // defined in uw_iterator.c
 extern UwType _uw_map_type;       // defined in uw_map.c
 
 static UwType* basic_types[] = {
@@ -764,6 +765,7 @@ static UwType* basic_types[] = {
     [UwTypeId_Struct]    = &_uw_struct_type,
     [UwTypeId_Compound]  = &_uw_compound_type,
     [UwTypeId_Status]    = &_uw_status_type,
+    [UwTypeId_Iterator]  = &_uw_iterator_type,
     [UwTypeId_Array]     = &_uw_array_type,
     [UwTypeId_Map]       = &_uw_map_type
 };

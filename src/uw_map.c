@@ -231,7 +231,7 @@ static unsigned set_hash_table_item(struct _UwHashTable* hash_table, unsigned ht
     } while (true);
 }
 
-static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capacity, unsigned ht_offset)
+static UwResult _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capacity, unsigned ht_offset)
 /*
  * Expand map if necessary.
  *
@@ -241,9 +241,7 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
     // expand array if necessary
     unsigned array_cap = desired_capacity << 1;
     if (array_cap > _uw_array_capacity(&map->kv_pairs)) {
-        if (!_uw_array_resize(type_id, &map->kv_pairs, array_cap)) {
-            return false;
-        }
+        uw_expect_ok( _uw_array_resize(type_id, &map->kv_pairs, array_cap) );
     }
 
     struct _UwHashTable* ht = &map->hash_table;
@@ -251,7 +249,7 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
     // check if hash table needs expansion
     unsigned quarter_cap = ht->capacity >> 2;
     if ((ht->capacity >= desired_capacity + quarter_cap) && (ht_offset < quarter_cap)) {
-        return true;
+        return UwOK();
     }
 
     unsigned new_capacity = ht->capacity << 1;
@@ -261,7 +259,7 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
     }
 
     if (!init_hash_table(type_id, ht, ht->capacity, new_capacity)) {
-        return false;
+        return UwOOM();
     }
 
     // rebuild hash table
@@ -275,10 +273,10 @@ static bool _uw_map_expand(UwTypeId type_id, _UwMap* map, unsigned desired_capac
         n -= 2;
         kv_index++;
     }
-    return true;
+    return UwOK();
 }
 
-static bool update_map(UwValuePtr map, UwValuePtr key, UwValuePtr value)
+static UwResult update_map(UwValuePtr map, UwValuePtr key, UwValuePtr value)
 /*
  * key and value are moved to the internal array
  */
@@ -297,28 +295,20 @@ static bool update_map(UwValuePtr map, UwValuePtr key, UwValuePtr value)
         UwValuePtr v_ptr = &__map->kv_pairs.items[value_index];
         uw_destroy(v_ptr);
         *v_ptr = uw_move(value);
-        return true;
+        return UwOK();
     }
 
     // key not found, insert
 
-    if (!_uw_map_expand(type_id, __map, get_map_length(__map) + 1, ht_offset)) {
-        return false;
-    }
+    uw_expect_ok( _uw_map_expand(type_id, __map, get_map_length(__map) + 1, ht_offset) );
+
     // append key and value
     unsigned kv_index = _uw_array_length(&__map->kv_pairs) >> 1;
     set_hash_table_item(&__map->hash_table, uw_hash(key), kv_index + 1);
 
-    if (!_uw_array_append_item(type_id, &__map->kv_pairs, key, map)) {
-        goto panic;
-    }
-    if (!_uw_array_append_item(type_id, &__map->kv_pairs, value, map)) {
-        goto panic;
-    }
-    return true;
+    uw_expect_ok( _uw_array_append_item(type_id, &__map->kv_pairs, key, map) );
 
-panic:
-    uw_panic("Failed append to preallocated array");
+    return _uw_array_append_item(type_id, &__map->kv_pairs, value, map);
 }
 
 /****************************************************************
@@ -339,18 +329,17 @@ static UwResult map_init(UwValuePtr self, void* ctor_args)
 {
     // XXX not using ctor_args for now
 
-    UwValue error = UwOOM();  // default error is OOM unless some arg is a status
-
     _UwMap* map = get_data_ptr(self);
     struct _UwHashTable* ht = &map->hash_table;
     ht->items_used = 0;
-    if (init_hash_table(self->type_id, ht, 0, UWMAP_INITIAL_CAPACITY)) {
-        if (_uw_alloc_array(self->type_id, &map->kv_pairs, UWMAP_INITIAL_CAPACITY * 2)) {
-            return UwOK();
-        }
+    if (!init_hash_table(self->type_id, ht, 0, UWMAP_INITIAL_CAPACITY)) {
+        return UwOOM();
     }
-    map_fini(self);
-    return uw_move(&error);
+    UwValue status = _uw_alloc_array(self->type_id, &map->kv_pairs, UWMAP_INITIAL_CAPACITY * 2);
+    if (uw_error(&status)) {
+        map_fini(self);
+    }
+    return uw_move(&status);
 }
 
 static void map_hash(UwValuePtr self, UwHashContext* ctx)
@@ -371,22 +360,13 @@ static UwResult map_deepcopy(UwValuePtr self)
     _UwMap* src_map = get_data_ptr(self);
     unsigned map_length    = get_map_length(src_map);
 
-    if (!_uw_map_expand(dest.type_id, get_data_ptr(&dest), map_length, 0)) {
-        return UwOOM();
-    }
+    uw_expect_ok( _uw_map_expand(dest.type_id, get_data_ptr(&dest), map_length, 0) );
 
     UwValuePtr kv = &src_map->kv_pairs.items[0];
     for (unsigned i = 0; i < map_length; i++) {{
         UwValue key = uw_clone(kv++);  // okay to clone because keys are already deeply copied
-        uw_return_if_error(&key);
-
         UwValue value = uw_clone(kv++);
-        uw_return_if_error(&value);
-
-        if (!update_map(&dest, &key, &value)) {
-            // should not happen because the map already resized
-            return UwOOM();
-        }
+        uw_expect_ok( update_map(&dest, &key, &value) );  // error should not happen because the map already resized
     }}
     return uw_move(&dest);
 }
@@ -537,21 +517,14 @@ static_assert((sizeof(_UwCompoundData) & (alignof(_UwMap) - 1)) == 0);
  * map functions
  */
 
-bool uw_map_update(UwValuePtr map, UwValuePtr key, UwValuePtr value)
+UwResult uw_map_update(UwValuePtr map, UwValuePtr key, UwValuePtr value)
 {
     uw_assert_map(map);
 
     UwValue map_key = UwNull();
     map_key = uw_deepcopy(key);  // deep copy key for immutability
-    if (uw_error(&map_key)) {
-        uw_destroy(&map_key);
-        return false;
-    }
+    uw_return_if_error(&map_key);
     UwValue map_value = uw_clone(value);
-    if (uw_error(&map_value)) {
-        uw_destroy(&map_value);
-        return false;
-    }
     return update_map(map, &map_key, &map_value);
 }
 
@@ -597,7 +570,10 @@ UwResult uw_map_update_ap(UwValuePtr map, va_list ap)
         if (!uw_charptr_to_string_inplace(&value)) {
             goto failure;
         }
-        if (!update_map(map, &key, &value)) {
+        UwValue status = update_map(map, &key, &value);
+        if (uw_error(&status)) {
+            uw_destroy(&error);
+            error = uw_move(&status);
             goto failure;
         }
     }}

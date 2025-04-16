@@ -6,6 +6,8 @@
 extern "C" {
 #endif
 
+extern UwType _uw_struct_type;
+
 UwResult _uw_struct_alloc(UwValuePtr self, void* ctor_args);
 /*
  * Allocate struct_data and call init method.

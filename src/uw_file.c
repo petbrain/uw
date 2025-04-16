@@ -1,5 +1,4 @@
 #include <errno.h>
-#include <limits.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -40,6 +39,8 @@ static void stop_read_lines(UwValuePtr self);
 
 static UwResult file_init(UwValuePtr self, void* ctor_args)
 {
+    // XXX not using ctor_args for now
+
     _UwFile* f = get_data_ptr(self);
     f->fd = -1;
     f->name = UwNull();
@@ -106,7 +107,7 @@ static bool file_equal(UwValuePtr self, UwValuePtr other)
  * File interface
  */
 
-unsigned UwInterfaceId_File = UINT_MAX;
+unsigned UwInterfaceId_File = 0;
 
 static UwResult file_open(UwValuePtr self, UwValuePtr file_name, int flags, mode_t mode)
 {
@@ -220,7 +221,7 @@ static bool file_set_name(UwValuePtr self, UwValuePtr file_name)
  * FileReader interface
  */
 
-unsigned UwInterfaceId_FileReader = UINT_MAX;
+unsigned UwInterfaceId_FileReader = 0;
 
 static UwResult file_read(UwValuePtr self, void* buffer, unsigned buffer_size, unsigned* bytes_read)
 {
@@ -245,7 +246,7 @@ static UwResult file_read(UwValuePtr self, void* buffer, unsigned buffer_size, u
  * FileWriter interface
  */
 
-unsigned UwInterfaceId_FileWriter = UINT_MAX;
+unsigned UwInterfaceId_FileWriter = 0;
 
 static UwResult file_write(UwValuePtr self, void* data, unsigned size, unsigned* bytes_written)
 {
@@ -303,8 +304,7 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
     uw_string_truncate(line, 0);
 
     if (f->buffer == nullptr) {
-        UwValue status = start_read_lines(self);
-        uw_return_if_error(&status);
+        uw_expect_ok( start_read_lines(self) );
     }
 
     if (uw_is_string(&f->pushback)) {
@@ -331,8 +331,7 @@ static UwResult read_line_inplace(UwValuePtr self, UwValuePtr line)
 
             // read next chunk of file
             {
-                UwValue status = file_read(self, f->buffer, LINE_READER_BUFFER_SIZE, &f->data_size);
-                uw_return_if_error(&status);
+                uw_expect_ok( file_read(self, f->buffer, LINE_READER_BUFFER_SIZE, &f->data_size) );
                 if (f->data_size == 0) {
                     return UwError(UW_ERROR_EOF);
                 }
@@ -412,8 +411,7 @@ static UwResult read_line(UwValuePtr self)
 {
     UwValue result = UwString();
     if (uw_ok(&result)) {
-        UwValue status = read_line_inplace(self, &result);
-        uw_return_if_error(&status);
+        uw_expect_ok( read_line_inplace(self, &result) );
     }
     return uw_move(&result);
 }
@@ -509,12 +507,11 @@ static void init_file_type()
 {
     _uw_init_types();
     _uw_init_interfaces();
-    _uw_init_iterators();
 
     // interfaces can be registered by any type in any order
-    if (UwInterfaceId_File       == UINT_MAX) { UwInterfaceId_File       = uw_register_interface("File",       UwInterface_File); }
-    if (UwInterfaceId_FileReader == UINT_MAX) { UwInterfaceId_FileReader = uw_register_interface("FileReader", UwInterface_FileReader); }
-    if (UwInterfaceId_FileWriter == UINT_MAX) { UwInterfaceId_FileWriter = uw_register_interface("FileWriter", UwInterface_FileWriter); }
+    if (UwInterfaceId_File       == 0) { UwInterfaceId_File       = uw_register_interface("File",       UwInterface_File); }
+    if (UwInterfaceId_FileReader == 0) { UwInterfaceId_FileReader = uw_register_interface("FileReader", UwInterface_FileReader); }
+    if (UwInterfaceId_FileWriter == 0) { UwInterfaceId_FileWriter = uw_register_interface("FileWriter", UwInterface_FileWriter); }
 
     UwTypeId_File = uw_add_type(
         &file_type,
@@ -534,8 +531,7 @@ UwResult _uw_file_open(UwValuePtr file_name, int flags, mode_t mode)
     UwValue file = uw_create(UwTypeId_File);
     uw_return_if_error(&file);
 
-    UwValue status = uw_interface(file.type_id, File)->open(&file, file_name, flags, mode);
-    uw_return_if_error(&status);
+    uw_expect_ok( uw_interface(file.type_id, File)->open(&file, file_name, flags, mode) );
 
     return uw_move(&file);
 }
@@ -623,10 +619,11 @@ UwResult _uw_path_v(...)
             return uw_move(&arg);
         }
         if (uw_is_string(&arg) || uw_is_charptr(&arg)) {
-            if (!uw_array_append(&parts, &arg)) {
+            UwValue status = uw_array_append(&parts, &arg);
+            if (uw_error(&status)) {
                 _uw_destroy_args(ap);
                 va_end(ap);
-                return UwOOM();
+                return uw_move(&status);
             }
         }
     }}
@@ -649,9 +646,10 @@ UwResult _uw_path_p(...)
             return uw_clone(arg);
         }
         if (uw_is_string(arg) || uw_is_charptr(arg)) {
-            if (!uw_array_append(&parts, arg)) {
+            UwValue status = uw_array_append(&parts, arg);
+            if (uw_error(&status)) {
                 va_end(ap);
-                return UwOOM();
+                return uw_move(&status);
             }
         }
     }

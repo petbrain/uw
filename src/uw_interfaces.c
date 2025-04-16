@@ -4,7 +4,7 @@
 #include <libpussy/arena.h>
 #include <libpussy/mmarray.h>
 
-#include "include/uw_interfaces.h"
+#include "include/uw.h"
 #include "src/uw_interfaces_internal.h"
 
 typedef struct {

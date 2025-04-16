@@ -4,6 +4,13 @@
 extern "C" {
 #endif
 
+typedef struct {
+    /*
+     * Arguments for Iterator constructor
+     */
+    UwValuePtr iterable;
+} UwIteratorCtorArgs;
+
 /****************************************************************
  * LineReader interface
  */
@@ -59,6 +66,17 @@ typedef struct {
     UwMethodStopReadLines   stop;
 
 } UwInterface_LineReader;
+
+
+/*
+ * Shorthand methods
+ */
+static inline UwResult uw_start_read_lines (UwValuePtr reader) { return uw_interface(reader->type_id, LineReader)->start(reader); }
+static inline UwResult uw_read_line        (UwValuePtr reader) { return uw_interface(reader->type_id, LineReader)->read_line(reader); }
+static inline UwResult uw_read_line_inplace(UwValuePtr reader, UwValuePtr line) { return uw_interface(reader->type_id, LineReader)->read_line_inplace(reader, line); }
+static inline bool     uw_unread_line      (UwValuePtr reader, UwValuePtr line) { return uw_interface(reader->type_id, LineReader)->unread_line(reader, line); }
+static inline unsigned uw_get_line_number  (UwValuePtr reader) { return uw_interface(reader->type_id, LineReader)->get_line_number(reader); }
+static inline void     uw_stop_read_lines  (UwValuePtr reader) { uw_interface(reader->type_id, LineReader)->stop(reader); }
 
 
 #ifdef __cplusplus

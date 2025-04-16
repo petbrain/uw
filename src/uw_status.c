@@ -12,19 +12,21 @@
 #include "src/uw_struct_internal.h"
 
 static char* basic_statuses[] = {
-    [UW_SUCCESS]                   = "SUCCESS",
-    [UW_STATUS_VA_END]             = "VA_END",
-    [UW_ERROR_ERRNO]               = "ERRNO",
-    [UW_ERROR_OOM]                 = "OOM",
-    [UW_ERROR_NOT_IMPLEMENTED]     = "NOT IMPLEMENTED",
-    [UW_ERROR_INCOMPATIBLE_TYPE]   = "INCOMPATIBLE_TYPE",
-    [UW_ERROR_EOF]                 = "EOF",
-    [UW_ERROR_INDEX_OUT_OF_RANGE]  = "INDEX_OUT_OF_RANGE",
+    [UW_SUCCESS]                     = "SUCCESS",
+    [UW_STATUS_VA_END]               = "VA_END",
+    [UW_ERROR_ERRNO]                 = "ERRNO",
+    [UW_ERROR_OOM]                   = "OOM",
+    [UW_ERROR_NOT_IMPLEMENTED]       = "NOT IMPLEMENTED",
+    [UW_ERROR_INCOMPATIBLE_TYPE]     = "INCOMPATIBLE_TYPE",
+    [UW_ERROR_EOF]                   = "EOF",
+    [UW_ERROR_DATA_SIZE_TOO_BIG]     = "DATA_SIZE_TOO_BIG",
+    [UW_ERROR_INDEX_OUT_OF_RANGE]    = "INDEX_OUT_OF_RANGE",
+    [UW_ERROR_ITERATION_IN_PROGRESS] = "ITERATION_IN_PROGRESS",
     [UW_ERROR_EXTRACT_FROM_EMPTY_ARRAY] = "EXTRACT_FROM_EMPTY_ARRAY",
-    [UW_ERROR_KEY_NOT_FOUND]       = "KEY_NOT_FOUND",
-    [UW_ERROR_FILE_ALREADY_OPENED] = "FILE_ALREADY_OPENED",
-    [UW_ERROR_NOT_REGULAR_FILE]    = "NOT_REGULAR_FILE",
-    [UW_ERROR_UNREAD_FAILED]       = "UNREAD_FAILED"
+    [UW_ERROR_KEY_NOT_FOUND]         = "KEY_NOT_FOUND",
+    [UW_ERROR_FILE_ALREADY_OPENED]   = "FILE_ALREADY_OPENED",
+    [UW_ERROR_NOT_REGULAR_FILE]      = "NOT_REGULAR_FILE",
+    [UW_ERROR_UNREAD_FAILED]         = "UNREAD_FAILED"
 };
 
 static char** statuses = nullptr;
@@ -176,8 +178,7 @@ static UwResult status_deepcopy(UwValuePtr self)
     }
     result.status_data = nullptr;
 
-    UwValue err = _uw_struct_alloc(&result, nullptr);
-    uw_return_if_error(&err);
+    uw_expect_ok( _uw_struct_alloc(&result, nullptr) );
 
     result.status_data->file_name = self->status_data->file_name;
     result.status_data->line_number = self->status_data->line_number;

@@ -88,9 +88,7 @@ UwResult uw_split_addr_port(UwValuePtr addr_port)
     if (uw_array_length(&parts) == 1) {
         // Assume addr_port contains port (or service name) only.
         // Insert empty string for address part.
-        if (!uw_array_insert(&parts, 0, &emptystr)) {
-            return UwOOM();
-        }
+        uw_expect_ok( uw_array_insert(&parts, 0, &emptystr) );
     } else {
         UwValue addr = uw_array_item(&parts, 0);
         UwValue port = uw_array_item(&parts, 1);
@@ -105,12 +103,8 @@ UwResult uw_split_addr_port(UwValuePtr addr_port)
             } else {
                 // port is missing
                 uw_array_clean(&parts);
-                if (!uw_array_append(&parts, addr_port)) {
-                    return UwOOM();
-                }
-                if (!uw_array_append(&parts, &emptystr)) {
-                    return UwOOM();
-                }
+                uw_expect_ok( uw_array_append(&parts, addr_port) );
+                uw_expect_ok( uw_array_append(&parts, &emptystr) );
             }
         }
     }

@@ -12,8 +12,9 @@ extern "C" {
 #endif
 
 extern UwTypeId UwTypeId_File;
+
 /*
- * In addition to file-specific interfaces , this type also supports
+ * In addition to file-specific interfaces , File type also supports
  * iterator interfaces and can be considered as a singleton iterator,
  * comprised of both iterable and iterator.
  *

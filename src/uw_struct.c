@@ -77,8 +77,7 @@ UwResult _uw_struct_create(UwTypeId type_id, void* ctor_args)
     UwValue result = {
         .type_id = type_id
     };
-    UwValue status = _uw_struct_alloc(&result, ctor_args);
-    uw_return_if_error(&status);
+    uw_expect_ok( _uw_struct_alloc(&result, ctor_args) );
     return uw_move(&result);
 }
 
