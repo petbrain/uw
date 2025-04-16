@@ -6,7 +6,6 @@
 
 #include <uw_types.h>
 #include <uw_interfaces.h>
-#include <uw_iterators.h>
 
 #include <uw_args.h>
 #include <uw_dump.h>
@@ -15,6 +14,7 @@
 
 #include <uw_array.h>
 #include <uw_datetime.h>
+#include <uw_iterator.h>
 #include <uw_map.h>
 #include <uw_string.h>
 #include <uw_file.h>

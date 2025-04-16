@@ -25,7 +25,7 @@ add_library(uw STATIC
     src/uw_file.c
     src/uw_hash.c
     src/uw_interfaces.c
-    src/uw_iterators.c
+    src/uw_iterator.c
     src/uw_map.c
     src/uw_netutils.c
     src/uw_status.c
