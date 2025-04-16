@@ -1,30 +1,23 @@
-#include <limits.h>
-
 #include "include/uw.h"
 #include "src/uw_interfaces_internal.h"
+#include "src/uw_iterator_internal.h"
 #include "src/uw_struct_internal.h"
 
 /****************************************************************
  * Iterator type
  */
 
-typedef struct {
-    _UwValue iterable;  // cloned iterable value
-} _UwIterator;
-
-#define get_data_ptr(value)  ((_UwIterator*) _uw_get_data_ptr((value), UwTypeId_Iterator))
-
 static UwResult iterator_init(UwValuePtr self, void* ctor_args)
 {
     UwIteratorCtorArgs* args = ctor_args;
-    _UwIterator* data = get_data_ptr(self);
+    _UwIterator* data = get_iterator_data_ptr(self);
     data->iterable = uw_clone(args->iterable);
     return UwOK();
 }
 
 static void iterator_fini(UwValuePtr self)
 {
-    _UwIterator* data = get_data_ptr(self);
+    _UwIterator* data = get_iterator_data_ptr(self);
     uw_destroy(&data->iterable);
 }
 
@@ -40,7 +33,7 @@ static UwResult iterator_deepcopy(UwValuePtr self)
 
 static void iterator_dump(UwValuePtr self, FILE* fp, int first_indent, int next_indent, _UwCompoundChain* tail)
 {
-    _UwIterator* data = get_data_ptr(self);
+    _UwIterator* data = get_iterator_data_ptr(self);
 
     _uw_dump_start(fp, self, first_indent);
     _uw_dump_struct_data(fp, self);

@@ -47,7 +47,7 @@ void _uw_init_interfaces()
 
 unsigned _uw_register_interface(char* name, unsigned num_methods)
 {
-    _uw_init_types();
+    _uw_init_interfaces();
 
     unsigned n = mmarray_length(registered_interfaces);
     if (n == MAX_INTERFACES) {

@@ -3,6 +3,8 @@
 #include <stdarg.h>
 #include <uchar.h>
 
+#include <uw_iterator.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -186,6 +188,22 @@ UwResult _uw_array_set_item(UwValuePtr array, unsigned index, UwValuePtr item);
  * Return UwStatus.
  */
 
+
+/****************************************************************
+ * Iterator
+ */
+
+extern UwTypeId UwTypeId_ArrayIterator;
+
+static inline UwResult uw_array_iterator(UwValuePtr array)
+/*
+ * Return ArrayIterator that supports multiple (TBD) iteration interfaces:
+ *   - LineReader
+ */
+{
+    UwIteratorCtorArgs args = { .iterable = array };
+    return uw_create2(UwTypeId_ArrayIterator, &args);
+}
 
 /****************************************************************
  * Miscellaneous array functions

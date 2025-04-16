@@ -505,9 +505,6 @@ static_assert((sizeof(_UwStructData) & (alignof(_UwFile) - 1)) == 0);
 [[ gnu::constructor ]]
 static void init_file_type()
 {
-    _uw_init_types();
-    _uw_init_interfaces();
-
     // interfaces can be registered by any type in any order
     if (UwInterfaceId_File       == 0) { UwInterfaceId_File       = uw_register_interface("File",       UwInterface_File); }
     if (UwInterfaceId_FileReader == 0) { UwInterfaceId_FileReader = uw_register_interface("FileReader", UwInterface_FileReader); }

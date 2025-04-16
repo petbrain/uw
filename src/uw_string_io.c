@@ -256,8 +256,6 @@ static_assert((sizeof(_UwStructData) & (alignof(_UwStringIO) - 1)) == 0);
 [[ gnu::constructor ]]
 static void init_stringio_type()
 {
-    _uw_init_interfaces();
-
     UwTypeId_StringIO = uw_add_type(
         &stringio_type,
         UwInterfaceId_LineReader, &line_reader_interface

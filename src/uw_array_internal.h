@@ -22,6 +22,8 @@ typedef struct {
     unsigned itercount;  // number of iterations in progress
 } _UwArray;
 
+#define get_array_data_ptr(value)  ((_UwArray*) _uw_get_data_ptr((value), UwTypeId_Array))
+
 extern UwType _uw_array_type;
 
 /****************************************************************

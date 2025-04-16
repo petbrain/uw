@@ -17,6 +17,7 @@ find_package(ICU COMPONENTS uc)
 add_library(uw STATIC
     src/uw_args.c
     src/uw_array.c
+    src/uw_array_iterator.c
     src/uw_assert.c
     src/uw_charptr.c
     src/uw_compound.c
